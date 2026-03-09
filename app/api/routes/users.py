@@ -18,7 +18,7 @@ router = APIRouter()
 def create_user(payload: UserCreate, db: Session = Depends(get_db)):
     if get_user_by_email(db, payload.email):
         raise HTTPException(status_code=409, detail="Email already exists")
-    return add_user(db, payload.email, payload.password, payload.full_name)
+    return add_user(db, payload.email, payload.password, payload.name, payload.surname)
 
 
 @router.get("", response_model=list[UserOut])

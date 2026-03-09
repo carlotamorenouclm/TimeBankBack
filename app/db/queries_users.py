@@ -7,9 +7,9 @@ from app.models.users import User
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 
-def add_user(db: Session, email: str, password: str, full_name: Optional[str] = None) -> User:
+def add_user(db: Session, email: str, password: str, name: Optional[str] = None, surname: Optional[str] = None) -> User:
     hashed = pwd_context.hash(password)
-    user = User(email=email, hashed_password=hashed, full_name=full_name)
+    user = User(email=email, hashed_password=hashed, name=name, surname=surname)
     db.add(user)
     db.commit()
     db.refresh(user)
