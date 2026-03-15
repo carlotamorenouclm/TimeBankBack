@@ -35,3 +35,33 @@ def delete_user(db: Session, user_id: int) -> bool:
     db.delete(user)
     db.commit()
     return True
+
+from app.core.security import verify_password
+
+
+def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
+    user = get_user_by_email(db, email)
+    if not user:
+        return None
+    if not verify_password(password, user.hashed_password):
+        return None
+    return user
+
+
+def update_user_profile(
+    db: Session,
+    user: User,
+    name: Optional[str] = None,
+    surname: Optional[str] = None,
+    email: Optional[str] = None,
+) -> User:
+    if name is not None:
+        user.name = name
+    if surname is not None:
+        user.surname = surname
+    if email is not None:
+        user.email = email
+
+    db.commit()
+    db.refresh(user)
+    return user
