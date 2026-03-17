@@ -4,6 +4,7 @@ from app.db.session import create_tables
 from app.api.routes.users import router as users_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.profile import router as profile_router
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="TimeBankBack")
 
@@ -15,7 +16,10 @@ def on_startup() -> None:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
