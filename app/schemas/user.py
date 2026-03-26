@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Literal, Optional
 from pydantic import BaseModel, EmailStr, Field, field_validator
 import re
 
@@ -38,12 +38,17 @@ class UserCreate(BaseModel):
         return v
 
 
+class UserLogin(BaseModel):
+    email: EmailStr = Field(..., description="User email")
+    password: str = Field(..., min_length=1, max_length=100, description="User password")
+
+
 class UserOut(BaseModel):
     id: int
     email: EmailStr
     name: Optional[str] = None
     surname: Optional[str] = None
-    role: str = Field(..., max_length=20)
+    role: Literal["ADMIN", "USER"]
     is_active: bool
 
     class Config:

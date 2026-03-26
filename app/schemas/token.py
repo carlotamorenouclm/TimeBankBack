@@ -1,6 +1,5 @@
 from pydantic import BaseModel
 
-
-class TokenOut(BaseModel):
+class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"

@@ -1,8 +1,10 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from app.db.session import create_tables
-from app.api.routes.users import router as users_router
 from fastapi.middleware.cors import CORSMiddleware
+
+from app.api.routes.users import router as users_router
+from app.api.routes.token import router as token_router
+from app.api.routes.admin import router as admin_router
 
 app = FastAPI(title="TimeBankBack")
 
@@ -28,5 +30,6 @@ app.add_middleware(
 def health():
     return {"status": "ok"}
 
-
+app.include_router(admin_router, prefix="/admin", tags=["admin"])
 app.include_router(users_router, prefix="/users", tags=["users"])
+app.include_router(token_router, prefix="/auth", tags=["auth"])
