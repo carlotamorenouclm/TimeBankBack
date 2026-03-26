@@ -48,24 +48,3 @@ class UserOut(BaseModel):
 
     class Config:
         from_attributes = True
-
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
-
-
-class UserUpdate(BaseModel):
-    name: Optional[str] = Field(None, max_length=255)
-    surname: Optional[str] = Field(None, max_length=255)
-    email: Optional[EmailStr] = None
-
-    @field_validator('name', 'surname')
-    @classmethod
-    def validate_name_fields_update(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None:
-            v = v.strip()
-            if not v:
-                return None
-            if not re.match(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]+$', v):
-                raise ValueError('Solo se permiten letras, espacios y guiones')
-        return v
