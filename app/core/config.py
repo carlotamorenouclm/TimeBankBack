@@ -5,11 +5,17 @@ BASE_DIR = Path(__file__).resolve().parents[2]  # -> TimeBankBack/
 
 
 class Settings(BaseSettings):
-    DB_HOST: str = "127.0.0.1"
-    DB_PORT: int = 3306
-    DB_NAME: str = "timebank"
-    DB_USER: str = "root"
-    DB_PASSWORD: str = "root"
+    # Database
+    DB_HOST: str
+    DB_PORT: int
+    DB_NAME: str
+    DB_USER: str
+    DB_PASSWORD: str
+    
+    # Security
+    SECRET_KEY: str 
+    ALGORITHM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
 
     model_config = SettingsConfigDict(
         env_file=str(BASE_DIR / ".env"),
