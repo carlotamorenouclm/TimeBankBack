@@ -16,9 +16,6 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     user = aut_user(db=db, email=form_data.username, password=form_data.password)
     if user.is_active is False:
         raise HTTPException(status_code=403, detail="Inactive user")
-    normalized_role = (user.role).upper()
-    access_token = create_access_token(
-        data={"sub": user.email, "role": normalized_role,}
-    )
+    access_token = create_access_token(data={"sub": user.email})
     return Token(access_token=access_token)
 

@@ -43,3 +43,4 @@ def remove_user(user_id: int, db: Session = Depends(get_db)):
     if not ok:
         raise HTTPException(status_code=404, detail="User not found")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+

@@ -48,7 +48,6 @@ class UserOut(BaseModel):
     email: EmailStr
     name: Optional[str] = None
     surname: Optional[str] = None
-    role: Literal["ADMIN", "USER"]
     is_active: bool
 
     class Config:
