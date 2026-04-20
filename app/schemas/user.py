@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Optional
 from pydantic import BaseModel, EmailStr, Field, field_validator
 import re
 
@@ -48,6 +48,7 @@ class UserOut(BaseModel):
     email: EmailStr
     name: Optional[str] = None
     surname: Optional[str] = None
+    time_tokens: int
     is_active: bool
 
     class Config:

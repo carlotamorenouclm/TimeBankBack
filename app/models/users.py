@@ -14,5 +14,6 @@ class User(Base):
     name = Column(String(255), nullable=True)
     surname = Column(String(255), nullable=True)
     role = Column(String(20), default="USER", nullable=False)
+    time_tokens = Column(Integer, default=0, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
