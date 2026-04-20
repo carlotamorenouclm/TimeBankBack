@@ -19,5 +19,10 @@ def create_tables() -> None:
     # Importa Base y modelos para registrar metadata
     from app.models.users import Base  # noqa
     from app.models.users import User  # noqa
+    from app.models.portal import ServiceOffer  # noqa
+    from app.models.portal import ServiceRequest  # noqa
+    from app.models.portal import UserTransaction  # noqa
+    from app.models.portal import UserWallet  # noqa
+    from app.models.portal import WalletRecharge  # noqa
 
     Base.metadata.create_all(bind=engine)
