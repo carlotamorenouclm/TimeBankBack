@@ -34,7 +34,7 @@ def delete_user(db: Session, user_id: int) -> bool:
     db.commit()
     return True
 
-def update_user(db: Session, user_id: int, email: Optional[str] = None, password: Optional[str] = None, name: Optional[str] = None, surname: Optional[str] = None) -> Optional[User]:
+def update_user(db: Session, user_id: int, name: Optional[str] = None, surname: Optional[str] = None) -> Optional[User]:
     user = get_user_by_id(db, user_id)
     if not user:
         return None
