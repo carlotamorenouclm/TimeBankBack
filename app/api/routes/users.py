@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.schemas.user import UserCreate, UserOut
+from app.schemas.user import UserCreate, UserOut, UserUpdate
 from app.core.auth import check_admin
 from app.db.queries_users import (
     add_user,
@@ -10,6 +10,7 @@ from app.db.queries_users import (
     delete_user,
     get_user_by_id,
     get_user_by_email,
+    update_user,
 )
 
 router = APIRouter()
@@ -44,3 +45,10 @@ def remove_user(user_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
+@router.post("/update/{user_id:int}", status_code=status.HTTP_200_OK,
+             dependencies=[Depends(check_admin)])
+def update_user_info(user_id: int, payload: UserUpdate, db: Session = Depends(get_db)):
+    user = update_user(db, user_id, payload.name, payload.surname)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return Response(status_code=status.HTTP_200_OK, content="User updated successfully")

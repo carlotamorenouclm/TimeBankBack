@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Optional
 from pydantic import BaseModel, EmailStr, Field, field_validator
 import re
 
@@ -48,7 +48,28 @@ class UserOut(BaseModel):
     email: EmailStr
     name: Optional[str] = None
     surname: Optional[str] = None
+    time_tokens: int
     is_active: bool
 
     class Config:
         from_attributes = True
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = Field(None, max_length=255, description="User name")
+    surname: Optional[str] = Field(None, max_length=255, description="User surname")
+
+    @field_validator('name', 'surname')
+    @classmethod
+    def validate_name_fields(cls, v: Optional[str]) -> Optional[str]:
+        """Valida que los nombres solo contengan letras, espacios y acentos"""
+        if v is not None:
+            v = v.strip()
+            if not v:
+                return None
+            if not re.match(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]+$', v):
+                raise ValueError('Solo se permiten letras, espacios y guiones')
+        return v
+    
+class UserUpdateRoleTimeTokens(BaseModel):
+    new_role: str = Field(..., description="New role for the user")
+    new_time_tokens: int = Field(..., ge=0, description="New time tokens for the user")

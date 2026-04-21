@@ -23,7 +23,7 @@ def get_user_by_email(db: Session, email: str) -> Optional[User]:
 
 
 def list_users(db: Session) -> List[User]:
-    return db.query(User).order_by(User.id.asc()).all()
+    return db.query(User).filter(User.role == "USER").order_by(User.id.asc()).all()
 
 
 def delete_user(db: Session, user_id: int) -> bool:
@@ -33,3 +33,25 @@ def delete_user(db: Session, user_id: int) -> bool:
     db.delete(user)
     db.commit()
     return True
+
+def update_user(db: Session, user_id: int, name: Optional[str] = None, surname: Optional[str] = None) -> Optional[User]:
+    user = get_user_by_id(db, user_id)
+    if not user:
+        return None
+    if name is not None:
+        user.name = name
+    if surname is not None:
+        user.surname = surname
+    db.commit()
+    db.refresh(user)
+    return user
+
+def update_password(db: Session, user_id: int, new_password: str) -> Optional[User]:
+    user = get_user_by_id(db, user_id)
+    if not user:
+        return None
+    user.hashed_password = hash_password(new_password)
+    db.commit()
+    db.refresh(user)
+    return user
+
