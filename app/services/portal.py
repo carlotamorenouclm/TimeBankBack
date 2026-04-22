@@ -223,17 +223,33 @@ def create_service_offer_response(
     title: str,
     description: str,
     availability: str,
+    home_service: bool,
+    street: str | None,
+    street_number: str | None,
+    floor: str | None,
+    door: str | None,
     extra: str | None,
     price: int,
     image_key: str,
 ) -> CreateServiceOfferResponse:
     # Create a new published service and return it ready for the frontend.
+    address = None
+    if not home_service and street and street_number:
+        address_parts = [f"{street.strip()} No. {street_number.strip()}"]
+        if floor:
+            address_parts.append(f"Floor {floor.strip()}")
+        if door:
+            address_parts.append(f"Door {door.strip()}")
+        address = ", ".join(address_parts)
+
     service_offer = create_service_offer(
         db=db,
         provider=provider,
         title=title.strip(),
         description=description.strip(),
         availability=availability.strip(),
+        home_service=home_service,
+        address=address,
         extra=extra.strip() if extra else None,
         price=price,
         image_key=image_key.strip(),

@@ -1,7 +1,7 @@
 # Pydantic DTOs and payloads for the portal area that travel through the API.
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class PortalUserSummary(BaseModel):
@@ -18,6 +18,8 @@ class ServiceOfferOut(BaseModel):
     title: str
     description: str
     availability: str
+    home_service: bool
+    address: str | None = None
     extra: str | None = None
     price: int
     image_key: str
@@ -110,9 +112,27 @@ class CreateServiceOfferPayload(BaseModel):
     title: str = Field(..., min_length=3, max_length=255)
     description: str = Field(..., min_length=10, max_length=1000)
     availability: str = Field(..., min_length=3, max_length=255)
+    home_service: bool = True
+    street: str | None = Field(default=None, min_length=2, max_length=255)
+    street_number: str | None = Field(default=None, min_length=1, max_length=30)
+    floor: str | None = Field(default=None, max_length=30)
+    door: str | None = Field(default=None, max_length=30)
     extra: str | None = Field(default=None, max_length=255)
     price: int = Field(..., gt=0, le=1000)
     image_key: str = Field(..., min_length=2, max_length=50)
+
+    @model_validator(mode="after")
+    def validate_location(self):
+        if not self.home_service and (not self.street or not self.street_number):
+            raise ValueError("Street and street number are required when the service is not home service")
+
+        if self.home_service:
+            self.street = None
+            self.street_number = None
+            self.floor = None
+            self.door = None
+
+        return self
 
 
 class CreateServiceOfferResponse(BaseModel):

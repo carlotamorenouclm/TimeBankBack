@@ -1,5 +1,5 @@
 # ORM models for the user portal: catalog, requests, wallet, and history.
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.sql import func
 
 from app.models.users import Base
@@ -14,6 +14,8 @@ class ServiceOffer(Base):
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)
     availability = Column(String(255), nullable=False)
+    home_service = Column(Boolean, nullable=False, default=True)
+    address = Column(String(255), nullable=True)
     extra = Column(String(255), nullable=True)
     price = Column(Integer, nullable=False)
     image_key = Column(String(50), nullable=False)
