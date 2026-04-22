@@ -1,3 +1,4 @@
+# Main user ORM model and shared SQLAlchemy base.
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy.sql import func
@@ -13,7 +14,7 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     name = Column(String(255), nullable=True)
     surname = Column(String(255), nullable=True)
+    avatar_key = Column(String(100), nullable=True)
     role = Column(String(20), default="USER", nullable=False)
-    time_tokens = Column(Integer, default=0, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

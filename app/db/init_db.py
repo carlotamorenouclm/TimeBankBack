@@ -1,3 +1,4 @@
+# Helper script to create or drop tables manually outside normal startup.
 from app.db.session import engine
 from app.models.users import Base  # noqa: F401
 from app.models.users import User  # noqa: F401

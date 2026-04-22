@@ -1,3 +1,4 @@
+# Carga la configuracion desde .env y construye la URL de conexion a la BD.
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 

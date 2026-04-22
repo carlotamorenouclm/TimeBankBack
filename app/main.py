@@ -1,5 +1,8 @@
+# Punto de entrada de FastAPI: crea app, middlewares, startup y registro de rutas.
 from fastapi import FastAPI
 from app.db.session import create_tables
+from app.db.queries_portal import cleanup_seeded_portal_data
+from app.db.session import SessionLocal
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes.me import router as me_router
@@ -13,7 +16,13 @@ app = FastAPI(title="TimeBankBack")
 
 @app.on_event("startup")
 def on_startup() -> None:
+    # Start with the schema ready and remove old demo data automatically.
     create_tables()
+    db = SessionLocal()
+    try:
+        cleanup_seeded_portal_data(db)
+    finally:
+        db.close()
 
 
 app.add_middleware(

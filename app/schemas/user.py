@@ -1,3 +1,4 @@
+# User-related DTOs and Pydantic validations.
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field, field_validator
 import re
@@ -12,29 +13,29 @@ class UserCreate(BaseModel):
     @field_validator('password')
     @classmethod
     def validate_password_strength(cls, v: str) -> str:
-        """Valida que la contraseña sea segura"""
+        """Validate that the password meets the security rules."""
         if len(v) < 8:
-            raise ValueError('La contraseña debe tener al menos 8 caracteres')
+            raise ValueError('Password must contain at least 8 characters')
         if not re.search(r'[A-Z]', v):
-            raise ValueError('La contraseña debe contener al menos una letra mayúscula')
+            raise ValueError('Password must contain at least one uppercase letter')
         if not re.search(r'[a-z]', v):
-            raise ValueError('La contraseña debe contener al menos una letra minúscula')
+            raise ValueError('Password must contain at least one lowercase letter')
         if not re.search(r'\d', v):
-            raise ValueError('La contraseña debe contener al menos un número')
+            raise ValueError('Password must contain at least one number')
         if not re.search(r'[!@#$%^&*(),.?":{}|<>\-_+=\[\]\\\/~`]', v):
-            raise ValueError('La contraseña debe contener al menos un carácter especial')
+            raise ValueError('Password must contain at least one special character')
         return v
 
     @field_validator('name', 'surname')
     @classmethod
     def validate_name_fields(cls, v: Optional[str]) -> Optional[str]:
-        """Valida que los nombres solo contengan letras, espacios y acentos"""
+        """Validate that names only contain letters, spaces, and accents."""
         if v is not None:
             v = v.strip()
             if not v:
                 return None
             if not re.match(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]+$', v):
-                raise ValueError('Solo se permiten letras, espacios y guiones')
+                raise ValueError('Only letters, spaces, and hyphens are allowed')
         return v
 
 
@@ -48,7 +49,7 @@ class UserOut(BaseModel):
     email: EmailStr
     name: Optional[str] = None
     surname: Optional[str] = None
-    time_tokens: int
+    avatar_key: Optional[str] = None
     is_active: bool
 
     class Config:
@@ -57,19 +58,19 @@ class UserOut(BaseModel):
 class UserUpdate(BaseModel):
     name: Optional[str] = Field(None, max_length=255, description="User name")
     surname: Optional[str] = Field(None, max_length=255, description="User surname")
+    avatar_key: Optional[str] = Field(None, max_length=100, description="Avatar key")
 
     @field_validator('name', 'surname')
     @classmethod
     def validate_name_fields(cls, v: Optional[str]) -> Optional[str]:
-        """Valida que los nombres solo contengan letras, espacios y acentos"""
+        """Validate that names only contain letters, spaces, and accents."""
         if v is not None:
             v = v.strip()
             if not v:
                 return None
             if not re.match(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]+$', v):
-                raise ValueError('Solo se permiten letras, espacios y guiones')
+                raise ValueError('Only letters, spaces, and hyphens are allowed')
         return v
     
-class UserUpdateRoleTimeTokens(BaseModel):
+class UserUpdateRole(BaseModel):
     new_role: str = Field(..., description="New role for the user")
-    new_time_tokens: int = Field(..., ge=0, description="New time tokens for the user")

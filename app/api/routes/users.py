@@ -1,3 +1,4 @@
+# Rutas CRUD basicas de usuarios y registro publico.
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
@@ -48,7 +49,7 @@ def remove_user(user_id: int, db: Session = Depends(get_db)):
 @router.post("/update/{user_id:int}", status_code=status.HTTP_200_OK,
              dependencies=[Depends(check_admin)])
 def update_user_info(user_id: int, payload: UserUpdate, db: Session = Depends(get_db)):
-    user = update_user(db, user_id, payload.name, payload.surname)
+    user = update_user(db, user_id, payload.name, payload.surname, payload.avatar_key)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return Response(status_code=status.HTTP_200_OK, content="User updated successfully")

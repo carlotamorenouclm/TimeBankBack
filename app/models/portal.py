@@ -1,3 +1,4 @@
+# ORM models for the user portal: catalog, requests, wallet, and history.
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.sql import func
 
@@ -8,6 +9,8 @@ class ServiceOffer(Base):
     __tablename__ = "service_offers"
 
     id = Column(Integer, primary_key=True, index=True)
+    # owner_id permite saber a que usuario pertenece el servicio publicado.
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)
     availability = Column(String(255), nullable=False)
@@ -23,6 +26,10 @@ class ServiceRequest(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     receiver_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    # requester_id enlaza la solicitud con el comprador real para poder devolver saldo o actualizar historial.
+    requester_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    service_offer_id = Column(Integer, ForeignKey("service_offers.id"), nullable=True, index=True)
+    buyer_transaction_id = Column(Integer, ForeignKey("user_transactions.id"), nullable=True, index=True)
     requester_name = Column(String(255), nullable=False)
     service = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)

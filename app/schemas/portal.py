@@ -1,3 +1,4 @@
+# Pydantic DTOs and payloads for the portal area that travel through the API.
 from datetime import datetime
 
 from pydantic import BaseModel, Field
@@ -8,10 +9,12 @@ class PortalUserSummary(BaseModel):
     name: str
     role: str
     email: str
+    avatar_key: str | None = None
 
 
 class ServiceOfferOut(BaseModel):
     id: int
+    owner_id: int | None = None
     title: str
     description: str
     availability: str
@@ -26,6 +29,7 @@ class ServiceOfferOut(BaseModel):
 
 class DashboardResponse(BaseModel):
     services: list[ServiceOfferOut]
+    my_services: list[ServiceOfferOut] = []
 
 
 class TransactionOut(BaseModel):
@@ -34,8 +38,10 @@ class TransactionOut(BaseModel):
     service: str
     other_user: str | None = None
     date: str
+    address: str | None = None
     amount: int
     status: str
+    clarification: str | None = None
 
 
 class HistoryResponse(BaseModel):
@@ -85,5 +91,40 @@ class RechargePayload(BaseModel):
     amount: int = Field(..., gt=0, le=1000)
 
 
+class CreateServiceRequestPayload(BaseModel):
+    scheduled_at: str = Field(..., min_length=3, max_length=255)
+    street: str = Field(..., min_length=2, max_length=255)
+    street_number: str = Field(..., min_length=1, max_length=30)
+    floor: str | None = Field(default=None, max_length=30)
+    door: str | None = Field(default=None, max_length=30)
+    message: str | None = Field(default=None, max_length=500)
+
+
+class CreateServiceRequestResponse(BaseModel):
+    request_id: int
+    message: str
+    new_balance: int
+
+
+class CreateServiceOfferPayload(BaseModel):
+    title: str = Field(..., min_length=3, max_length=255)
+    description: str = Field(..., min_length=10, max_length=1000)
+    availability: str = Field(..., min_length=3, max_length=255)
+    extra: str | None = Field(default=None, max_length=255)
+    price: int = Field(..., gt=0, le=1000)
+    image_key: str = Field(..., min_length=2, max_length=50)
+
+
+class CreateServiceOfferResponse(BaseModel):
+    message: str
+    service: ServiceOfferOut
+
+
+class DeleteServiceOfferResponse(BaseModel):
+    message: str
+    deleted_service_id: int
+
+
 def format_datetime(value: datetime) -> str:
+    # Single date format for values returned to the frontend.
     return value.strftime("%Y-%m-%d")

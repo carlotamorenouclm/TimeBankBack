@@ -1,3 +1,4 @@
+# Utilidades criptograficas: hash de passwords y creacion/lectura de JWT.
 from fastapi import HTTPException
 from passlib.context import CryptContext
 from jose import JWTError, jwt

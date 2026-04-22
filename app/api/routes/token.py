@@ -1,3 +1,4 @@
+# Ruta de autenticacion que intercambia credenciales por un JWT.
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -18,4 +19,3 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
         raise HTTPException(status_code=403, detail="Inactive user")
     access_token = create_access_token(data={"sub": user.email})
     return Token(access_token=access_token)
-

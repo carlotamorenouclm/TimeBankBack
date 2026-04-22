@@ -1,3 +1,4 @@
+# Dependencias de autenticacion/autorizacion reutilizadas por las rutas.
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -10,12 +11,14 @@ from app.db.session import get_db
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 def aut_user( email: str, password: str, db: Session = Depends(get_db)) -> UserOut:
+    # Valida credenciales en login usando email y password plano.
     user = get_user_by_email(db, email)
     if not user or not verify_password(password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     return user
 
 async def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)) -> UserOut:
+    # Resuelve el usuario actual a partir del JWT enviado en Authorization.
     payload = decode_token(token)
     email: str = payload.get("sub")
     if email is None:
@@ -28,6 +31,7 @@ async def get_current_user(db: Session = Depends(get_db), token: str = Depends(o
     return user
 
 def check_admin(user: UserOut = Depends(get_current_user)):
+    # Dependency para restringir rutas solo a administradores.
     if user.role != "ADMIN":
         raise HTTPException(status_code=403, detail="Admin privileges required")
     return user

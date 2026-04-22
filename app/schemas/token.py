@@ -1,3 +1,4 @@
+# DTO de salida del login con el JWT devuelto al frontend.
 from pydantic import BaseModel
 
 class Token(BaseModel):

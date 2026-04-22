@@ -1,101 +1,62 @@
+# User portal routes: receive HTTP and delegate business logic to the service layer.
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
-from app.db.queries_portal import (
-    accept_request,
-    create_wallet_recharge,
-    ensure_user_portal_seed_data,
-    get_or_create_wallet,
-    get_request_for_receiver,
-    list_received_requests,
-    list_service_offers,
-    list_user_transactions,
-    list_wallet_recharges,
-    reject_request,
-    seed_default_service_offers,
-)
 from app.db.session import get_db
 from app.schemas.portal import (
     AcceptRequestPayload,
+    CreateServiceOfferPayload,
+    CreateServiceOfferResponse,
+    CreateServiceRequestPayload,
+    CreateServiceRequestResponse,
     DashboardResponse,
+    DeleteServiceOfferResponse,
     HistoryResponse,
-    InboxRequestOut,
     InboxResponse,
     PortalUserSummary,
     RechargePayload,
     RejectRequestPayload,
-    ServiceOfferOut,
-    TransactionOut,
-    WalletRechargeOut,
     WalletResponse,
-    format_datetime,
+)
+from app.services.portal import (
+    PortalNotFoundError,
+    accept_inbox_request_response,
+    build_portal_summary,
+    create_service_offer_response,
+    create_purchase_request_response,
+    delete_service_offer_response,
+    get_dashboard_response,
+    get_history_response,
+    get_inbox_response,
+    get_wallet_response,
+    recharge_wallet_response,
+    reject_inbox_request_response,
 )
 
 router = APIRouter()
 
 
-def _bootstrap_user_data(db: Session, current_user) -> None:
-    seed_default_service_offers(db)
-    ensure_user_portal_seed_data(db, current_user)
-
-
 @router.get("/summary", response_model=PortalUserSummary, status_code=status.HTTP_200_OK)
 def get_portal_summary(current_user=Depends(get_current_user)):
-    full_name = " ".join(part for part in [current_user.name, current_user.surname] if part).strip()
-    return PortalUserSummary(
-        id=current_user.id,
-        name=full_name or current_user.email,
-        role=current_user.role,
-        email=current_user.email,
-    )
+    # La ruta solo resuelve dependencias HTTP y delega el formato de salida.
+    return build_portal_summary(current_user)
 
 
 @router.get("/dashboard", response_model=DashboardResponse, status_code=status.HTTP_200_OK)
 def get_dashboard(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
-    _bootstrap_user_data(db, current_user)
-    return DashboardResponse(services=[ServiceOfferOut.model_validate(item) for item in list_service_offers(db)])
+    # current_user protects the route even though its fields are not used here.
+    return get_dashboard_response(db, current_user.id)
 
 
 @router.get("/history", response_model=HistoryResponse, status_code=status.HTTP_200_OK)
 def get_history(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
-    _bootstrap_user_data(db, current_user)
-    transactions = [
-        TransactionOut(
-            id=item.id,
-            type=item.type,
-            service=item.service,
-            other_user=item.other_user,
-            date=format_datetime(item.occurred_at),
-            amount=item.amount,
-            status=item.status,
-        )
-        for item in list_user_transactions(db, current_user.id)
-    ]
-    return HistoryResponse(transactions=transactions)
+    return get_history_response(db, current_user.id)
 
 
 @router.get("/inbox", response_model=InboxResponse, status_code=status.HTTP_200_OK)
 def get_inbox(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
-    _bootstrap_user_data(db, current_user)
-    requests = [
-        InboxRequestOut(
-            id=item.id,
-            service=item.service,
-            description=item.description,
-            date=item.scheduled_at,
-            address=item.address,
-            message=item.message,
-            image_key=item.image_key,
-            price=item.price,
-            status=item.status,
-            clarification=item.clarification,
-            reject_reason=item.reject_reason,
-            requester_name=item.requester_name,
-        )
-        for item in list_received_requests(db, current_user.id)
-    ]
-    return InboxResponse(requests=requests)
+    return get_inbox_response(db, current_user.id)
 
 
 @router.post("/inbox/{request_id}/accept", response_model=InboxResponse, status_code=status.HTTP_200_OK)
@@ -105,12 +66,11 @@ def accept_inbox_request(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    _bootstrap_user_data(db, current_user)
-    request_row = get_request_for_receiver(db, request_id, current_user.id)
-    if request_row is None:
-        raise HTTPException(status_code=404, detail="Request not found")
-    accept_request(db, request_row, payload.clarification)
-    return get_inbox(db, current_user)
+    try:
+        return accept_inbox_request_response(db, current_user.id, request_id, payload.clarification)
+    except PortalNotFoundError as exc:
+        # El servicio trabaja con errores de dominio y la ruta los traduce a HTTP.
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @router.post("/inbox/{request_id}/reject", response_model=InboxResponse, status_code=status.HTTP_200_OK)
@@ -120,23 +80,18 @@ def reject_inbox_request(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    _bootstrap_user_data(db, current_user)
-    request_row = get_request_for_receiver(db, request_id, current_user.id)
-    if request_row is None:
-        raise HTTPException(status_code=404, detail="Request not found")
-    reject_request(db, request_row, payload.reason)
-    return get_inbox(db, current_user)
+    try:
+        return reject_inbox_request_response(db, current_user.id, request_id, payload.reason)
+    except PortalNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @router.get("/wallet", response_model=WalletResponse, status_code=status.HTTP_200_OK)
 def get_wallet(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
-    _bootstrap_user_data(db, current_user)
-    wallet = get_or_create_wallet(db, current_user.id)
-    recharges = [
-        WalletRechargeOut(id=item.id, date=format_datetime(item.created_at), amount=item.amount)
-        for item in list_wallet_recharges(db, current_user.id)
-    ]
-    return WalletResponse(balance=wallet.balance, status=wallet.status, recharges=recharges)
+    try:
+        return get_wallet_response(db, current_user.id)
+    except PortalNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @router.post("/wallet/recharge", response_model=WalletResponse, status_code=status.HTTP_200_OK)
@@ -145,6 +100,75 @@ def recharge_wallet(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    _bootstrap_user_data(db, current_user)
-    create_wallet_recharge(db, current_user.id, payload.amount)
-    return get_wallet(db, current_user)
+    try:
+        return recharge_wallet_response(db, current_user.id, payload.amount)
+    except PortalNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post(
+    "/services/{service_offer_id}/request",
+    response_model=CreateServiceRequestResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_service_request(
+    service_offer_id: int,
+    payload: CreateServiceRequestPayload,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    try:
+        return create_purchase_request_response(
+            db=db,
+            requester=current_user,
+            service_offer_id=service_offer_id,
+            scheduled_at=payload.scheduled_at,
+            street=payload.street,
+            street_number=payload.street_number,
+            floor=payload.floor,
+            door=payload.door,
+            message=payload.message,
+        )
+    except PortalNotFoundError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post(
+    "/services",
+    response_model=CreateServiceOfferResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_service_offer(
+    payload: CreateServiceOfferPayload,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    try:
+        return create_service_offer_response(
+            db=db,
+            provider=current_user,
+            title=payload.title,
+            description=payload.description,
+            availability=payload.availability,
+            extra=payload.extra,
+            price=payload.price,
+            image_key=payload.image_key,
+        )
+    except PortalNotFoundError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.delete(
+    "/services/{service_offer_id}",
+    response_model=DeleteServiceOfferResponse,
+    status_code=status.HTTP_200_OK,
+)
+def delete_service_offer(
+    service_offer_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    try:
+        return delete_service_offer_response(db, current_user.id, service_offer_id)
+    except PortalNotFoundError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
