@@ -3,7 +3,7 @@ from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from app.core.security import decode_token, verify_password
-from app.db.queries_users import get_user_by_email
+from app.db.queries_users import get_user_by_email, get_user_by_id
 from app.schemas.user import UserOut
 from app.db.session import get_db
 
@@ -20,10 +20,10 @@ def aut_user( email: str, password: str, db: Session = Depends(get_db)) -> UserO
 async def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)) -> UserOut:
     # Resuelve el usuario actual a partir del JWT enviado en Authorization.
     payload = decode_token(token)
-    email: str = payload.get("sub")
-    if email is None:
+    subject: str = payload.get("sub")
+    if subject is None:
         raise HTTPException(status_code=401, detail="Invalid token")
-    user = get_user_by_email(db, email)
+    user = get_user_by_id(db, int(subject)) if subject.isdigit() else get_user_by_email(db, subject)
     if user is None:
         raise HTTPException(status_code=401, detail="Invalid token")
     if user.is_active is False:
