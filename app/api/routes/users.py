@@ -49,7 +49,19 @@ def remove_user(user_id: int, db: Session = Depends(get_db)):
 @router.post("/update/{user_id:int}", status_code=status.HTTP_200_OK,
              dependencies=[Depends(check_admin)])
 def update_user_info(user_id: int, payload: UserUpdate, db: Session = Depends(get_db)):
-    user = update_user(db, user_id, payload.name, payload.surname, payload.avatar_key)
+    if payload.email:
+        existing_user = get_user_by_email(db, payload.email)
+        if existing_user and existing_user.id != user_id:
+            raise HTTPException(status_code=409, detail="Email already registered")
+
+    user = update_user(
+        db,
+        user_id,
+        email=payload.email,
+        name=payload.name,
+        surname=payload.surname,
+        avatar_key=payload.avatar_key,
+    )
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return Response(status_code=status.HTTP_200_OK, content="User updated successfully")

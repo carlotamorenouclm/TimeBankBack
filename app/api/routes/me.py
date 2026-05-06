@@ -7,6 +7,7 @@ from app.schemas.user import UserOut, UserUpdate
 from app.core.auth import get_current_user
 from app.db.queries_users import (
     delete_user_account,
+    get_user_by_email,
     update_user,
 )
 
@@ -23,7 +24,19 @@ def update_me(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    user = update_user(db, current_user.id, payload.name, payload.surname, payload.avatar_key)
+    if payload.email and payload.email != current_user.email:
+        existing_user = get_user_by_email(db, payload.email)
+        if existing_user:
+            raise HTTPException(status_code=409, detail="Email already registered")
+
+    user = update_user(
+        db,
+        current_user.id,
+        email=payload.email,
+        name=payload.name,
+        surname=payload.surname,
+        avatar_key=payload.avatar_key,
+    )
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user

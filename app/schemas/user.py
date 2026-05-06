@@ -56,6 +56,7 @@ class UserOut(BaseModel):
         from_attributes = True
 
 class UserUpdate(BaseModel):
+    email: Optional[EmailStr] = Field(None, max_length=255, description="User email")
     name: Optional[str] = Field(None, max_length=255, description="User name")
     surname: Optional[str] = Field(None, max_length=255, description="User surname")
     avatar_key: Optional[str] = Field(None, max_length=100, description="Avatar key")

@@ -83,6 +83,7 @@ def delete_user_account(db: Session, user: User) -> bool:
 def update_user(
     db: Session,
     user_id: int,
+    email: Optional[str] = None,
     name: Optional[str] = None,
     surname: Optional[str] = None,
     avatar_key: Optional[str] = None,
@@ -90,6 +91,8 @@ def update_user(
     user = get_user_by_id(db, user_id)
     if not user:
         return None
+    if email is not None:
+        user.email = email
     if name is not None:
         user.name = name
     if surname is not None:
