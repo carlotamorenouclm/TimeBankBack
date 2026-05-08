@@ -32,6 +32,7 @@ class ServiceRequest(Base):
     requester_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     service_offer_id = Column(Integer, ForeignKey("service_offers.id"), nullable=True, index=True)
     buyer_transaction_id = Column(Integer, ForeignKey("user_transactions.id"), nullable=True, index=True)
+    seller_transaction_id = Column(Integer, ForeignKey("user_transactions.id"), nullable=True, index=True)
     requester_name = Column(String(255), nullable=False)
     service = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)

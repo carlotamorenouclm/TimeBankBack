@@ -192,17 +192,19 @@ def accept_request(db: Session, request_row: ServiceRequest, clarification: str)
     if provider_wallet is not None:
         provider_wallet.balance += request_row.price
 
-    db.add(
-        UserTransaction(
-            user_id=request_row.receiver_id,
-            type="Sale",
-            service=request_row.service,
-            other_user=request_row.requester_name,
-            amount=request_row.price,
-            status="Completed",
-            occurred_at=datetime.utcnow(),
-        )
+    provider_transaction = UserTransaction(
+        user_id=request_row.receiver_id,
+        type="Sale",
+        service=request_row.service,
+        other_user=request_row.requester_name,
+        amount=request_row.price,
+        status="Completed",
+        occurred_at=datetime.utcnow(),
     )
+    db.add(provider_transaction)
+    db.flush()
+    request_row.seller_transaction_id = provider_transaction.id
+
     db.commit()
     db.refresh(request_row)
     return request_row

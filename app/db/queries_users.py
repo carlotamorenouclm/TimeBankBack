@@ -2,6 +2,7 @@
 from typing import Optional, List
 from sqlalchemy.orm import Session
 
+from app.models.chat import ChatMessage
 from app.models.portal import ServiceOffer, ServiceRequest, UserTransaction, UserWallet, WalletRecharge
 from app.models.users import User
 from app.core.security import hash_password
@@ -59,8 +60,30 @@ def delete_user_account(db: Session, user: User) -> bool:
     ]
 
     if owned_service_ids:
+        owned_request_ids = [
+            request.id
+            for request in db.query(ServiceRequest.id)
+            .filter(ServiceRequest.service_offer_id.in_(owned_service_ids))
+            .all()
+        ]
+        if owned_request_ids:
+            db.query(ChatMessage).filter(
+                ChatMessage.service_request_id.in_(owned_request_ids)
+            ).delete(synchronize_session=False)
+
         db.query(ServiceRequest).filter(
             ServiceRequest.service_offer_id.in_(owned_service_ids)
+        ).delete(synchronize_session=False)
+
+    user_request_ids = [
+        request.id
+        for request in db.query(ServiceRequest.id)
+        .filter((ServiceRequest.receiver_id == user.id) | (ServiceRequest.requester_id == user.id))
+        .all()
+    ]
+    if user_request_ids:
+        db.query(ChatMessage).filter(
+            ChatMessage.service_request_id.in_(user_request_ids)
         ).delete(synchronize_session=False)
 
     db.query(ServiceRequest).filter(

@@ -22,6 +22,8 @@ TimeBank is a peer-to-peer service exchange platform where users offer and reque
 - Inbox for accepting or rejecting received requests.
 - Wallet balance and wallet recharges.
 - Transaction history for purchases and sales.
+- Chat between buyer and seller from transaction history.
+- Unread message counters per transaction.
 
 ## Tech Stack
 
@@ -159,6 +161,24 @@ The backend currently allows requests from the Vite frontend running on:
 | POST | `/portal/services/{service_offer_id}/request` | User | Requests a service and deducts the payment. |
 | POST | `/portal/services` | User | Publishes a new service offer. |
 | DELETE | `/portal/services/{service_offer_id}` | User | Deletes one of the authenticated user's services. |
+
+### Chat
+
+| Method | Endpoint | Auth | Description |
+| --- | --- | --- | --- |
+| GET | `/chat/requests/{request_id}/messages` | User | Lists messages for a chat linked to a service request and marks received messages as read. |
+| POST | `/chat/requests/{request_id}/messages` | User | Sends a message in a chat linked to a service request. |
+| GET | `/chat/threads/{thread_key}/messages` | User | Lists messages for a history-based chat thread and marks received messages as read. |
+| POST | `/chat/threads/{thread_key}/messages` | User | Sends a message in a history-based chat thread. |
+
+Chats are available from transaction history. Newer transactions can be linked through `request_id`; older or demo transactions without a persisted service request use a shared `thread_key` so the buyer and seller open the same conversation.
+
+`/portal/history` includes chat metadata for each transaction:
+
+- `request_id`: service request id when the transaction is linked to a request.
+- `chat_key`: shared fallback conversation key for history-based chats.
+- `other_user_id`: user id of the chat recipient.
+- `unread_count`: number of unread messages received by the current user.
 
 ## Authentication
 

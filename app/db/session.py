@@ -21,6 +21,7 @@ def create_tables() -> None:
     # Import Base and models so metadata gets registered.
     from app.models.users import Base  # noqa
     from app.models.users import User  # noqa
+    from app.models.chat import ChatMessage  # noqa
     from app.models.portal import ServiceOffer  # noqa
     from app.models.portal import ServiceRequest  # noqa
     from app.models.portal import UserTransaction  # noqa
@@ -49,6 +50,11 @@ def ensure_portal_schema_updates() -> None:
             "requester_id": "ALTER TABLE service_requests ADD COLUMN requester_id INTEGER NULL",
             "service_offer_id": "ALTER TABLE service_requests ADD COLUMN service_offer_id INTEGER NULL",
             "buyer_transaction_id": "ALTER TABLE service_requests ADD COLUMN buyer_transaction_id INTEGER NULL",
+            "seller_transaction_id": "ALTER TABLE service_requests ADD COLUMN seller_transaction_id INTEGER NULL",
+        },
+        "chat_messages": {
+            "thread_key": "ALTER TABLE chat_messages ADD COLUMN thread_key VARCHAR(255) NULL",
+            "is_read": "ALTER TABLE chat_messages ADD COLUMN is_read BOOLEAN NOT NULL DEFAULT 0",
         },
     }
 
@@ -66,3 +72,6 @@ def ensure_portal_schema_updates() -> None:
             for column_name, sql in table_updates.items():
                 if column_name not in existing_columns:
                     connection.execute(text(sql))
+
+        if inspector.has_table("chat_messages"):
+            connection.execute(text("ALTER TABLE chat_messages MODIFY service_request_id INTEGER NULL"))
