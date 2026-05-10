@@ -36,6 +36,10 @@ class DashboardResponse(BaseModel):
 
 class TransactionOut(BaseModel):
     id: int
+    request_id: int | None = None
+    chat_key: str | None = None
+    other_user_id: int | None = None
+    unread_count: int = 0
     type: str
     service: str
     other_user: str | None = None

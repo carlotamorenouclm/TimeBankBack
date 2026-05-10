@@ -1,13 +1,18 @@
 # Portal service layer: orchestrates queries and maps ORM models to DTOs.
 from sqlalchemy.orm import Session
 
+from app.db.queries_chat import (
+    count_unread_request_messages,
+    count_unread_thread_messages,
+    get_history_chat_info,
+    get_request_by_history_transaction_id,
+)
 from app.db.queries_portal import (
     accept_request,
     create_service_offer,
     create_purchase_request,
     create_wallet_recharge,
     delete_service_offer,
-    get_request_by_transaction_id,
     get_service_offer_by_id,
     get_request_for_receiver,
     get_wallet_by_user_id,
@@ -71,26 +76,36 @@ def get_dashboard_response(db: Session, user_id: int) -> DashboardResponse:
 
 def get_history_response(db: Session, user_id: int) -> HistoryResponse:
     # Build the history response by mapping each database row into TransactionOut.
-    transactions = [
-        TransactionOut(
+    transactions = []
+    for item in list_user_transactions(db, user_id):
+        linked_request = get_request_by_history_transaction_id(db, item.id)
+        chat_key, other_user_id = get_history_chat_info(db, item)
+        unread_count = (
+            count_unread_request_messages(db, linked_request.id, user_id)
+            if linked_request is not None
+            else count_unread_thread_messages(db, chat_key, user_id)
+            if chat_key
+            else 0
+        )
+        transactions.append(
+            TransactionOut(
             id=item.id,
+            request_id=linked_request.id if linked_request is not None else None,
+            chat_key=chat_key,
+            other_user_id=other_user_id,
+            unread_count=unread_count,
             type=item.type,
             service=item.service,
             other_user=item.other_user,
-            date=(
-                linked_request.scheduled_at
-                if (linked_request := get_request_by_transaction_id(db, item.id)) is not None
-                else format_datetime(item.occurred_at)
-            ),
+            date=linked_request.scheduled_at if linked_request is not None else format_datetime(item.occurred_at),
             address=linked_request.address if linked_request is not None else None,
             amount=item.amount,
             status=item.status,
             clarification=(
                 linked_request.clarification if linked_request is not None else None
             ),
+            )
         )
-        for item in list_user_transactions(db, user_id)
-    ]
     return HistoryResponse(transactions=transactions)
 
 
