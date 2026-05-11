@@ -10,6 +10,7 @@ class PortalUserSummary(BaseModel):
     role: str
     email: str
     avatar_key: str | None = None
+    pending_inbox_count: int = 0
 
 
 class ServiceOfferOut(BaseModel):
@@ -48,6 +49,7 @@ class TransactionOut(BaseModel):
     amount: int
     status: str
     clarification: str | None = None
+    reject_reason: str | None = None
 
 
 class HistoryResponse(BaseModel):
@@ -123,7 +125,7 @@ class CreateServiceOfferPayload(BaseModel):
     door: str | None = Field(default=None, max_length=30)
     extra: str | None = Field(default=None, max_length=255)
     price: int = Field(..., gt=0, le=1000)
-    image_key: str = Field(..., min_length=2, max_length=50)
+    image_key: str = Field(..., min_length=2, max_length=12_000_000)
 
     @model_validator(mode="after")
     def validate_location(self):

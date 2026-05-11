@@ -76,3 +76,9 @@ def ensure_portal_schema_updates() -> None:
 
         if inspector.has_table("chat_messages"):
             connection.execute(text("ALTER TABLE chat_messages MODIFY service_request_id INTEGER NULL"))
+
+        if inspector.has_table("service_offers"):
+            connection.execute(text("ALTER TABLE service_offers MODIFY image_key MEDIUMTEXT NOT NULL"))
+
+        if inspector.has_table("service_requests"):
+            connection.execute(text("ALTER TABLE service_requests MODIFY image_key MEDIUMTEXT NOT NULL"))

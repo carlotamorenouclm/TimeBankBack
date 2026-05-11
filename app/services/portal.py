@@ -10,6 +10,7 @@ from app.db.queries_chat import (
 from app.db.queries_portal import (
     accept_request,
     complete_request,
+    count_pending_received_requests,
     create_service_offer,
     create_purchase_request,
     create_wallet_recharge,
@@ -52,7 +53,7 @@ class PortalNotFoundError(Exception):
     pass
 
 
-def build_portal_summary(current_user) -> PortalUserSummary:
+def build_portal_summary(db: Session, current_user) -> PortalUserSummary:
     # Convert the authenticated user into the DTO exposed by the API.
     full_name = " ".join(part for part in [current_user.name, current_user.surname] if part).strip()
     return PortalUserSummary(
@@ -61,6 +62,7 @@ def build_portal_summary(current_user) -> PortalUserSummary:
         role=current_user.role,
         email=current_user.email,
         avatar_key=current_user.avatar_key,
+        pending_inbox_count=count_pending_received_requests(db, current_user.id),
     )
 
 
@@ -111,6 +113,36 @@ def get_history_response(db: Session, user_id: int) -> HistoryResponse:
             clarification=(
                 linked_request.clarification if linked_request is not None else None
             ),
+            reject_reason=(
+                linked_request.reject_reason if linked_request is not None else None
+            ),
+            )
+        )
+
+    existing_transaction_ids = {item.id for item in list_user_transactions(db, user_id)}
+    for request_row in list_received_requests(db, user_id):
+        if (
+            request_row.status != "rejected"
+            or request_row.seller_transaction_id in existing_transaction_ids
+        ):
+            continue
+
+        transactions.append(
+            TransactionOut(
+                id=-request_row.id,
+                request_id=request_row.id,
+                chat_key=None,
+                other_user_id=request_row.requester_id,
+                unread_count=count_unread_request_messages(db, request_row.id, user_id),
+                type="Sale",
+                service=request_row.service,
+                other_user=request_row.requester_name,
+                date=request_row.scheduled_at,
+                address=request_row.address,
+                amount=0,
+                status="Rejected",
+                clarification=None,
+                reject_reason=request_row.reject_reason,
             )
         )
     return HistoryResponse(transactions=transactions)

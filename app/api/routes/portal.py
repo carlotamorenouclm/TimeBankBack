@@ -42,9 +42,9 @@ router = APIRouter()
 
 
 @router.get("/summary", response_model=PortalUserSummary, status_code=status.HTTP_200_OK)
-def get_portal_summary(current_user=Depends(get_current_user)):
+def get_portal_summary(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     # La ruta solo resuelve dependencias HTTP y delega el formato de salida.
-    return build_portal_summary(current_user)
+    return build_portal_summary(db, current_user)
 
 
 @router.get("/dashboard", response_model=DashboardResponse, status_code=status.HTTP_200_OK)

@@ -1,5 +1,6 @@
 # ORM models for the user portal: catalog, requests, wallet, and history.
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.sql import func
 
 from app.models.users import Base
@@ -18,7 +19,7 @@ class ServiceOffer(Base):
     address = Column(String(255), nullable=True)
     extra = Column(String(255), nullable=True)
     price = Column(Integer, nullable=False)
-    image_key = Column(String(50), nullable=False)
+    image_key = Column(MEDIUMTEXT, nullable=False)
     owner_name = Column(String(255), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
@@ -39,7 +40,7 @@ class ServiceRequest(Base):
     scheduled_at = Column(String(255), nullable=False)
     address = Column(String(255), nullable=False)
     message = Column(Text, nullable=True)
-    image_key = Column(String(50), nullable=False)
+    image_key = Column(MEDIUMTEXT, nullable=False)
     price = Column(Integer, nullable=False)
     status = Column(String(20), default="pending", nullable=False)
     clarification = Column(Text, nullable=True)

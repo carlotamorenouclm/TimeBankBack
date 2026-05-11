@@ -168,6 +168,14 @@ def list_received_requests(db: Session, user_id: int) -> list[ServiceRequest]:
     )
 
 
+def count_pending_received_requests(db: Session, user_id: int) -> int:
+    return (
+        db.query(ServiceRequest)
+        .filter(ServiceRequest.receiver_id == user_id, ServiceRequest.status == "pending")
+        .count()
+    )
+
+
 def get_request_for_receiver(db: Session, request_id: int, receiver_id: int) -> ServiceRequest | None:
     # Ensure only requests owned by the authenticated receiver can be changed.
     return (
@@ -226,6 +234,19 @@ def reject_request(db: Session, request_row: ServiceRequest, reason: str) -> Ser
         ).first()
         if requester_transaction is not None:
             requester_transaction.status = "Cancelled"
+
+    provider_transaction = UserTransaction(
+        user_id=request_row.receiver_id,
+        type="Sale",
+        service=request_row.service,
+        other_user=request_row.requester_name,
+        amount=0,
+        status="Rejected",
+        occurred_at=datetime.utcnow(),
+    )
+    db.add(provider_transaction)
+    db.flush()
+    request_row.seller_transaction_id = provider_transaction.id
 
     db.commit()
     db.refresh(request_row)
