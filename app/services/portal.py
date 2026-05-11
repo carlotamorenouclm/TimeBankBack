@@ -9,11 +9,15 @@ from app.db.queries_chat import (
 )
 from app.db.queries_portal import (
     accept_request,
+    complete_request,
     create_service_offer,
     create_purchase_request,
     create_wallet_recharge,
     delete_service_offer,
+    get_request_by_transaction_id,
     get_service_offer_by_id,
+    get_transaction_by_id,
+    get_request_for_user,
     get_request_for_receiver,
     get_wallet_by_user_id,
     list_available_service_offers,
@@ -23,9 +27,11 @@ from app.db.queries_portal import (
     list_wallet_recharges,
     reject_request,
 )
+from app.db.queries_review import create_transaction_review, get_review_by_transaction_id
 from app.schemas.portal import (
     CreateServiceOfferResponse,
     CreateServiceRequestResponse,
+    CreateReviewResponse,
     DashboardResponse,
     DeleteServiceOfferResponse,
     HistoryResponse,
@@ -34,6 +40,7 @@ from app.schemas.portal import (
     PortalUserSummary,
     ServiceOfferOut,
     TransactionOut,
+    TransactionReviewOut,
     WalletRechargeOut,
     WalletResponse,
     format_datetime,
@@ -162,6 +169,19 @@ def reject_inbox_request_response(
 
     reject_request(db, request_row, reason)
     return get_inbox_response(db, user_id)
+
+
+def complete_request_response(db: Session, user_id: int, request_id: int) -> HistoryResponse:
+    request_row = get_request_for_user(db, request_id, user_id)
+    if request_row is None:
+        raise PortalNotFoundError("Request not found")
+
+    try:
+        complete_request(db, request_row)
+    except ValueError as exc:
+        raise PortalNotFoundError(str(exc)) from exc
+
+    return get_history_response(db, user_id)
 
 
 def get_wallet_response(db: Session, user_id: int) -> WalletResponse:
@@ -296,4 +316,55 @@ def delete_service_offer_response(
     return DeleteServiceOfferResponse(
         message="Service deleted successfully",
         deleted_service_id=deleted_service_id,
+    )
+
+
+def create_review_response(
+    db: Session,
+    reviewer_id: int,
+    transaction_id: int,
+    rating: int,
+    comment: str | None,
+) -> CreateReviewResponse:
+    transaction = get_transaction_by_id(db, transaction_id)
+    if transaction is None:
+        raise PortalNotFoundError("Transaction not found")
+
+    if transaction.user_id != reviewer_id:
+        raise PortalNotFoundError("You can only review your own transactions")
+
+    if transaction.status != "Completed":
+        raise PortalNotFoundError("Only completed transactions can be reviewed")
+
+    if transaction.type != "Purchase":
+        raise PortalNotFoundError("Only purchase transactions can be reviewed")
+
+    request_row = get_request_by_transaction_id(db, transaction_id)
+    if request_row is None or request_row.requester_id != reviewer_id:
+        raise PortalNotFoundError("Review request not found")
+
+    existing_review = get_review_by_transaction_id(db, transaction_id)
+    if existing_review is not None:
+        raise PortalNotFoundError("This transaction already has a review")
+
+    review = create_transaction_review(
+        db=db,
+        transaction_id=transaction_id,
+        reviewer_id=reviewer_id,
+        reviewed_user_id=request_row.receiver_id,
+        rating=rating,
+        comment=comment,
+    )
+
+    return CreateReviewResponse(
+        message="Review created successfully",
+        review=TransactionReviewOut(
+            id=review.id,
+            transaction_id=review.transaction_id,
+            reviewer_id=review.reviewer_id,
+            reviewed_user_id=review.reviewed_user_id,
+            rating=review.rating,
+            comment=review.comment,
+            created_at=format_datetime(review.created_at),
+        ),
     )

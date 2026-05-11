@@ -24,6 +24,7 @@ def create_tables() -> None:
     from app.models.chat import ChatMessage  # noqa
     from app.models.portal import ServiceOffer  # noqa
     from app.models.portal import ServiceRequest  # noqa
+    from app.models.review import TransactionReview  # noqa
     from app.models.portal import UserTransaction  # noqa
     from app.models.portal import UserWallet  # noqa
     from app.models.portal import WalletRecharge  # noqa

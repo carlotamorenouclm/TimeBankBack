@@ -146,6 +146,10 @@ def list_user_transactions(db: Session, user_id: int) -> list[UserTransaction]:
     )
 
 
+def get_transaction_by_id(db: Session, transaction_id: int) -> UserTransaction | None:
+    return db.query(UserTransaction).filter(UserTransaction.id == transaction_id).first()
+
+
 def get_request_by_transaction_id(db: Session, transaction_id: int) -> ServiceRequest | None:
     # Link a buyer history movement with its original service request when it exists.
     return (
@@ -179,18 +183,13 @@ def accept_request(db: Session, request_row: ServiceRequest, clarification: str)
     request_row.clarification = clarification or None
     request_row.reject_reason = None
 
-    # The requester pending purchase becomes completed.
+    # The requester pending purchase becomes accepted.
     if request_row.buyer_transaction_id:
         requester_transaction = db.query(UserTransaction).filter(
             UserTransaction.id == request_row.buyer_transaction_id
         ).first()
         if requester_transaction is not None:
-            requester_transaction.status = "Completed"
-
-    # When accepted, the amount is transferred to the provider wallet.
-    provider_wallet = get_wallet_by_user_id(db, request_row.receiver_id)
-    if provider_wallet is not None:
-        provider_wallet.balance += request_row.price
+            requester_transaction.status = "Accepted"
 
     provider_transaction = UserTransaction(
         user_id=request_row.receiver_id,
@@ -198,7 +197,7 @@ def accept_request(db: Session, request_row: ServiceRequest, clarification: str)
         service=request_row.service,
         other_user=request_row.requester_name,
         amount=request_row.price,
-        status="Completed",
+        status="Accepted",
         occurred_at=datetime.utcnow(),
     )
     db.add(provider_transaction)
@@ -227,6 +226,47 @@ def reject_request(db: Session, request_row: ServiceRequest, reason: str) -> Ser
         ).first()
         if requester_transaction is not None:
             requester_transaction.status = "Cancelled"
+
+    db.commit()
+    db.refresh(request_row)
+    return request_row
+
+
+def get_request_for_user(db: Session, request_id: int, user_id: int) -> ServiceRequest | None:
+    return (
+        db.query(ServiceRequest)
+        .filter(
+            ServiceRequest.id == request_id,
+            (ServiceRequest.requester_id == user_id) | (ServiceRequest.receiver_id == user_id),
+        )
+        .first()
+    )
+
+
+def complete_request(db: Session, request_row: ServiceRequest) -> ServiceRequest:
+    if request_row.status != "accepted":
+        raise ValueError("Only accepted requests can be completed")
+
+    request_row.status = "completed"
+
+    if request_row.buyer_transaction_id:
+        buyer_transaction = db.query(UserTransaction).filter(
+            UserTransaction.id == request_row.buyer_transaction_id
+        ).first()
+        if buyer_transaction is not None:
+            buyer_transaction.status = "Completed"
+
+    if request_row.seller_transaction_id:
+        seller_transaction = db.query(UserTransaction).filter(
+            UserTransaction.id == request_row.seller_transaction_id
+        ).first()
+        if seller_transaction is not None:
+            seller_transaction.status = "Completed"
+
+    # Transfer funds to the provider wallet once the service is completed.
+    provider_wallet = get_wallet_by_user_id(db, request_row.receiver_id)
+    if provider_wallet is not None:
+        provider_wallet.balance += request_row.price
 
     db.commit()
     db.refresh(request_row)

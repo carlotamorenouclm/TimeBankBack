@@ -10,6 +10,8 @@ from app.schemas.portal import (
     CreateServiceOfferResponse,
     CreateServiceRequestPayload,
     CreateServiceRequestResponse,
+    CreateReviewPayload,
+    CreateReviewResponse,
     DashboardResponse,
     DeleteServiceOfferResponse,
     HistoryResponse,
@@ -23,6 +25,8 @@ from app.services.portal import (
     PortalNotFoundError,
     accept_inbox_request_response,
     build_portal_summary,
+    complete_request_response,
+    create_review_response,
     create_service_offer_response,
     create_purchase_request_response,
     delete_service_offer_response,
@@ -82,6 +86,18 @@ def reject_inbox_request(
 ):
     try:
         return reject_inbox_request_response(db, current_user.id, request_id, payload.reason)
+    except PortalNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post("/requests/{request_id}/complete", response_model=HistoryResponse, status_code=status.HTTP_200_OK)
+def complete_request(
+    request_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    try:
+        return complete_request_response(db, current_user.id, request_id)
     except PortalNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -175,5 +191,23 @@ def delete_service_offer(
 ):
     try:
         return delete_service_offer_response(db, current_user.id, service_offer_id)
+    except PortalNotFoundError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/rating", response_model=CreateReviewResponse, status_code=status.HTTP_201_CREATED)
+def create_review(
+    payload: CreateReviewPayload,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    try:
+        return create_review_response(
+            db=db,
+            reviewer_id=current_user.id,
+            transaction_id=payload.transaction_id,
+            rating=payload.rating,
+            comment=payload.comment,
+        )
     except PortalNotFoundError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

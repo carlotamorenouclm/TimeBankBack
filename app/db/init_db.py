@@ -5,6 +5,7 @@ from app.models.users import User  # noqa: F401
 from app.models.chat import ChatMessage  # noqa: F401
 from app.models.portal import ServiceOffer  # noqa: F401
 from app.models.portal import ServiceRequest  # noqa: F401
+from app.models.portal import TransactionReview  # noqa: F401
 from app.models.portal import UserTransaction  # noqa: F401
 from app.models.portal import UserWallet  # noqa: F401
 from app.models.portal import WalletRecharge  # noqa: F401
