@@ -64,7 +64,7 @@ def get_request_by_history_transaction_id(
             ServiceRequest.service == transaction.service,
             ServiceRequest.requester_name == transaction.other_user,
             ServiceRequest.price == transaction.amount,
-            ServiceRequest.status == "accepted",
+            ServiceRequest.status.in_(["accepted", "completed"]),
         )
         .order_by(ServiceRequest.created_at.desc(), ServiceRequest.id.desc())
         .first()
