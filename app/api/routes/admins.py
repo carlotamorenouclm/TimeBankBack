@@ -3,12 +3,16 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.schemas.user import UserOut, UserUpdateRole
+from app.schemas.user import UserOut, UserUpdateRole, UserUpdateActive
+from app.schemas.portal import HistoryResponse, WalletResponse
 from app.core.auth import check_admin
 from app.db.queries_admin import (
     list_admins,
-    update_user_role
+    update_user_role,
+    update_user_is_active
 )
+from app.db.queries_users import get_user_by_id
+from app.services.portal import get_history_response, get_wallet_response, PortalNotFoundError
 
 router = APIRouter()
 
@@ -31,3 +35,35 @@ def change_role(user_id: int, body: UserUpdateRole, db: Session = Depends(get_db
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return Response(status_code=status.HTTP_200_OK, content="Role updated successfully")
+
+
+@router.post("/update/is-active/{user_id:int}", status_code=status.HTTP_200_OK,
+             dependencies=[Depends(check_admin)])
+def change_is_active(user_id: int, body: UserUpdateActive, db: Session = Depends(get_db)):
+    user = update_user_is_active(db, user_id, body.is_active)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return Response(
+        status_code=status.HTTP_200_OK,
+        content="User active status updated successfully"
+    )
+
+
+@router.get("/wallet/history", response_model=WalletResponse, status_code=status.HTTP_200_OK,
+            dependencies=[Depends(check_admin)])
+def get_user_wallet_history(user_id: int, db: Session = Depends(get_db)):
+    if get_user_by_id(db, user_id) is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    try:
+        return get_wallet_response(db, user_id)
+    except PortalNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get("/transaction/history", response_model=HistoryResponse, status_code=status.HTTP_200_OK,
+            dependencies=[Depends(check_admin)])
+def get_user_transaction_history(user_id: int, db: Session = Depends(get_db)):
+    if get_user_by_id(db, user_id) is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return get_history_response(db, user_id)
+
