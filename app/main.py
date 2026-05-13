@@ -12,6 +12,7 @@ from app.api.routes.chat import router as chat_router
 from app.api.routes.users import router as users_router
 from app.api.routes.admins import router as admins_router
 from app.api.routes.token import router as token_router
+from app.api.routes.reviews import router as reviews_router
 
 app = FastAPI(title="TimeBankBack")
 
@@ -48,6 +49,7 @@ def health():
 
 app.include_router(me_router, prefix="/me", tags=["me"])
 app.include_router(portal_router, prefix="/portal", tags=["portal"])
+app.include_router(reviews_router, prefix="", tags=["reviews"])
 app.include_router(chat_router, prefix="/chat", tags=["chat"])
 app.include_router(users_router, prefix="/users", tags=["users"])
 app.include_router(admins_router, prefix="/admins", tags=["admins"])
