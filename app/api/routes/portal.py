@@ -10,8 +10,6 @@ from app.schemas.portal import (
     CreateServiceOfferResponse,
     CreateServiceRequestPayload,
     CreateServiceRequestResponse,
-    CreateReviewPayload,
-    CreateReviewResponse,
     DashboardResponse,
     DeleteServiceOfferResponse,
     HistoryResponse,
@@ -26,7 +24,6 @@ from app.services.portal import (
     accept_inbox_request_response,
     build_portal_summary,
     complete_request_response,
-    create_review_response,
     create_service_offer_response,
     create_purchase_request_response,
     delete_service_offer_response,
@@ -191,23 +188,5 @@ def delete_service_offer(
 ):
     try:
         return delete_service_offer_response(db, current_user.id, service_offer_id)
-    except PortalNotFoundError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-
-@router.post("/rating", response_model=CreateReviewResponse, status_code=status.HTTP_201_CREATED)
-def create_review(
-    payload: CreateReviewPayload,
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
-    try:
-        return create_review_response(
-            db=db,
-            reviewer_id=current_user.id,
-            transaction_id=payload.transaction_id,
-            rating=payload.rating,
-            comment=payload.comment,
-        )
     except PortalNotFoundError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

@@ -12,6 +12,15 @@ def get_review_by_transaction_id(db: Session, transaction_id: int) -> Transactio
 	)
 
 
+def list_reviews_by_transaction_id(db: Session, transaction_id: int) -> list[TransactionReview]:
+	return (
+		db.query(TransactionReview)
+		.filter(TransactionReview.transaction_id == transaction_id)
+		.order_by(TransactionReview.id.asc())
+		.all()
+	)
+
+
 def create_transaction_review(
 	db: Session,
 	transaction_id: int,
