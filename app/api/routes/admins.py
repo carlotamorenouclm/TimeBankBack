@@ -3,14 +3,15 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.schemas.user import UserOut, UserUpdateRole, UserUpdateActive
+from app.schemas.user import UserOut, UserUpdateRole, UserUpdateActive, UserUpdateCoins
 from app.schemas.portal import HistoryResponse, WalletResponse
 from app.schemas.review import TransactionReviewOut
 from app.core.auth import check_admin
 from app.db.queries_admin import (
     list_admins,
     update_user_role,
-    update_user_is_active
+    update_user_is_active,
+    update_user_wallet_balance
 )
 from app.db.queries_users import get_user_by_id
 from app.services.portal import get_history_response, get_wallet_response, PortalNotFoundError
@@ -52,6 +53,15 @@ def change_is_active(user_id: int, body: UserUpdateActive, db: Session = Depends
         status_code=status.HTTP_200_OK,
         content="User active status updated successfully"
     )
+
+
+@router.post("/wallet/balance/{user_id:int}", response_model=WalletResponse, status_code=status.HTTP_200_OK,
+             dependencies=[Depends(check_admin)])
+def change_wallet_balance(user_id: int, body: UserUpdateCoins, db: Session = Depends(get_db)):
+    wallet = update_user_wallet_balance(db, user_id, body.coins)
+    if not wallet:
+        raise HTTPException(status_code=404, detail="User not found")
+    return get_wallet_response(db, user_id)
 
 
 @router.get("/wallet/history", response_model=WalletResponse, status_code=status.HTTP_200_OK,

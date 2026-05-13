@@ -79,3 +79,7 @@ class UserUpdateRole(BaseModel):
 
 class UserUpdateActive(BaseModel):
     is_active: bool = Field(..., description="Whether the user is active")
+
+
+class UserUpdateCoins(BaseModel):
+    coins: int = Field(..., ge=0, description="New wallet balance for the user")
