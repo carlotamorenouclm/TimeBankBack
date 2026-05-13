@@ -4,8 +4,11 @@ from pydantic import BaseModel, Field
 class TransactionReviewOut(BaseModel):
 	id: int
 	transaction_id: int
+	service: str | None = None
 	reviewer_id: int
+	reviewer_name: str | None = None
 	reviewed_user_id: int
+	reviewed_user_name: str | None = None
 	rating: int
 	comment: str | None = None
 	created_at: str

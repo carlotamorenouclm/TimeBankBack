@@ -5,7 +5,11 @@ from app.db.session import get_db
 from app.core.auth import get_current_user
 from app.schemas.review import CreateReviewPayload, CreateReviewResponse, TransactionReviewOut
 from app.services.portal import PortalNotFoundError
-from app.services.review import create_review_response, get_transaction_reviews_response
+from app.services.review import (
+    create_review_response,
+    get_service_reviews_response,
+    get_transaction_reviews_response,
+)
 
 router = APIRouter()
 
@@ -29,6 +33,22 @@ def create_review(
 
 
 @router.get(
+    "/reviews/services/{service_offer_id}",
+    response_model=list[TransactionReviewOut],
+    status_code=status.HTTP_200_OK,
+)
+def get_service_reviews(
+    service_offer_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    try:
+        return get_service_reviews_response(db, service_offer_id)
+    except PortalNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get(
     "/reviews/{transaction_id}",
     response_model=list[TransactionReviewOut],
     status_code=status.HTTP_200_OK,
@@ -42,5 +62,4 @@ def get_transaction_reviews(
         return get_transaction_reviews_response(db, current_user.id, transaction_id)
     except PortalNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-
 

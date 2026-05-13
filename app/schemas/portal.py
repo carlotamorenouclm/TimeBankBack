@@ -25,6 +25,7 @@ class ServiceOfferOut(BaseModel):
     price: int
     image_key: str
     owner_name: str
+    overall_rating: float | None = None
 
     class Config:
         from_attributes = True

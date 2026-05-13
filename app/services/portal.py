@@ -26,6 +26,7 @@ from app.db.queries_portal import (
     list_wallet_recharges,
     reject_request,
 )
+from app.db.queries_review import get_average_rating_by_service_offer_id
 from app.schemas.portal import (
     CreateServiceOfferResponse,
     CreateServiceRequestResponse,
@@ -61,20 +62,24 @@ def build_portal_summary(db: Session, current_user) -> PortalUserSummary:
     )
 
 
-def _build_service_offer_list(offers) -> list[ServiceOfferOut]:
+def _build_service_offer_list(db: Session, offers) -> list[ServiceOfferOut]:
     # Reuse one ORM -> DTO conversion path for every service list response.
-    return [ServiceOfferOut.model_validate(item) for item in offers]
+    return [_build_service_offer_response(db, item) for item in offers]
 
 
-def _build_service_offer_response(offer) -> ServiceOfferOut:
+def _build_service_offer_response(db: Session, offer) -> ServiceOfferOut:
     # Keep single-item service mapping aligned with list responses.
-    return ServiceOfferOut.model_validate(offer)
+    return ServiceOfferOut.model_validate(offer).model_copy(
+        update={
+            "overall_rating": get_average_rating_by_service_offer_id(db, offer.id),
+        }
+    )
 
 
 def get_dashboard_response(db: Session, user_id: int) -> DashboardResponse:
     # Split purchasable services from owned services to support catalog tabs.
-    services = _build_service_offer_list(list_available_service_offers(db, user_id))
-    my_services = _build_service_offer_list(list_owned_service_offers(db, user_id))
+    services = _build_service_offer_list(db, list_available_service_offers(db, user_id))
+    my_services = _build_service_offer_list(db, list_owned_service_offers(db, user_id))
     return DashboardResponse(services=services, my_services=my_services)
 
 
@@ -318,7 +323,7 @@ def create_service_offer_response(
     )
     return CreateServiceOfferResponse(
         message="Service published successfully",
-        service=_build_service_offer_response(service_offer),
+        service=_build_service_offer_response(db, service_offer),
     )
 
 
@@ -344,5 +349,4 @@ def delete_service_offer_response(
         message="Service deleted successfully",
         deleted_service_id=deleted_service_id,
     )
-
 

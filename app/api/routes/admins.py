@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.schemas.user import UserOut, UserUpdateRole, UserUpdateActive
 from app.schemas.portal import HistoryResponse, WalletResponse
+from app.schemas.review import TransactionReviewOut
 from app.core.auth import check_admin
 from app.db.queries_admin import (
     list_admins,
@@ -13,6 +14,10 @@ from app.db.queries_admin import (
 )
 from app.db.queries_users import get_user_by_id
 from app.services.portal import get_history_response, get_wallet_response, PortalNotFoundError
+from app.services.review import (
+    delete_review_for_admin_response,
+    get_user_reviews_for_admin_response,
+)
 
 router = APIRouter()
 
@@ -67,3 +72,20 @@ def get_user_transaction_history(user_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
     return get_history_response(db, user_id)
 
+
+@router.get("/reviews", response_model=list[TransactionReviewOut], status_code=status.HTTP_200_OK,
+            dependencies=[Depends(check_admin)])
+def get_user_reviews(user_id: int, db: Session = Depends(get_db)):
+    if get_user_by_id(db, user_id) is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return get_user_reviews_for_admin_response(db, user_id)
+
+
+@router.delete("/reviews/{review_id:int}", status_code=status.HTTP_204_NO_CONTENT,
+               dependencies=[Depends(check_admin)])
+def delete_user_review(review_id: int, db: Session = Depends(get_db)):
+    try:
+        delete_review_for_admin_response(db, review_id)
+    except PortalNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
