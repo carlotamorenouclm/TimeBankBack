@@ -75,3 +75,7 @@ class UserUpdate(BaseModel):
     
 class UserUpdateRole(BaseModel):
     new_role: str = Field(..., description="New role for the user")
+
+
+class UserUpdateActive(BaseModel):
+    is_active: bool = Field(..., description="Whether the user is active")
