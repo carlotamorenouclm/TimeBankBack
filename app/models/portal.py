@@ -21,6 +21,7 @@ class ServiceOffer(Base):
     price = Column(Integer, nullable=False)
     image_key = Column(MEDIUMTEXT, nullable=False)
     owner_name = Column(String(255), nullable=False)
+    is_visible = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 

@@ -344,6 +344,8 @@ def create_purchase_request_response(
     service_offer = get_service_offer_by_id(db, service_offer_id)
     if service_offer is None:
         raise PortalNotFoundError("Service not found")
+    if not service_offer.is_visible:
+        raise PortalNotFoundError("Service is not available")
 
     address_parts = [f"{street} No. {street_number}"]
     if floor:

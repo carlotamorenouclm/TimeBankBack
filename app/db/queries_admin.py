@@ -2,7 +2,7 @@
 from typing import Optional, List
 from sqlalchemy.orm import Session
 
-from app.models.portal import UserWallet
+from app.models.portal import ServiceOffer, ServiceRequest, UserWallet
 from app.models.users import User
 from app.db.queries_users import get_user_by_id
 
@@ -44,3 +44,42 @@ def update_user_wallet_balance(db: Session, user_id: int, coins: int) -> Optiona
     db.commit()
     db.refresh(wallet)
     return wallet
+
+
+def list_user_service_offers(db: Session, user_id: int) -> List[ServiceOffer]:
+    return (
+        db.query(ServiceOffer)
+        .filter(ServiceOffer.owner_id == user_id)
+        .order_by(ServiceOffer.created_at.desc(), ServiceOffer.id.desc())
+        .all()
+    )
+
+
+def get_service_offer_for_admin(db: Session, service_offer_id: int) -> Optional[ServiceOffer]:
+    return db.query(ServiceOffer).filter(ServiceOffer.id == service_offer_id).first()
+
+
+def update_service_offer_visibility(
+    db: Session,
+    service_offer: ServiceOffer,
+    is_visible: bool,
+) -> ServiceOffer:
+    service_offer.is_visible = is_visible
+    db.commit()
+    db.refresh(service_offer)
+    return service_offer
+
+
+def delete_service_offer_for_admin(db: Session, service_offer: ServiceOffer) -> int:
+    linked_requests = (
+        db.query(ServiceRequest)
+        .filter(ServiceRequest.service_offer_id == service_offer.id)
+        .count()
+    )
+    if linked_requests > 0:
+        raise ValueError("Services with existing requests can only be hidden")
+
+    deleted_service_id = service_offer.id
+    db.delete(service_offer)
+    db.commit()
+    return deleted_service_id

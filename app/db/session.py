@@ -46,6 +46,7 @@ def ensure_portal_schema_updates() -> None:
             "owner_id": "ALTER TABLE service_offers ADD COLUMN owner_id INTEGER NULL",
             "home_service": "ALTER TABLE service_offers ADD COLUMN home_service BOOLEAN NOT NULL DEFAULT 1",
             "address": "ALTER TABLE service_offers ADD COLUMN address VARCHAR(255) NULL",
+            "is_visible": "ALTER TABLE service_offers ADD COLUMN is_visible BOOLEAN NOT NULL DEFAULT 1",
         },
         "service_requests": {
             "requester_id": "ALTER TABLE service_requests ADD COLUMN requester_id INTEGER NULL",

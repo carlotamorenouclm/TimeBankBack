@@ -25,6 +25,7 @@ class ServiceOfferOut(BaseModel):
     price: int
     image_key: str
     owner_name: str
+    is_visible: bool = True
     overall_rating: float | None = None
 
     class Config:
@@ -155,6 +156,10 @@ class CreateServiceOfferResponse(BaseModel):
 class DeleteServiceOfferResponse(BaseModel):
     message: str
     deleted_service_id: int
+
+
+class UpdateServiceVisibilityPayload(BaseModel):
+    is_visible: bool
 
 
 def format_datetime(value: datetime) -> str:

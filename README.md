@@ -16,6 +16,7 @@ TimeBank is a peer-to-peer service exchange platform where users offer and reque
 - User and administrator roles.
 - Administrator panel support for listing users/admins and changing roles.
 - Administrator support for activating/deactivating users, adjusting wallet balances, and monitoring user activity.
+- Administrator service moderation with visibility control and removal.
 - Authenticated user profile management.
 - Service catalog.
 - Service publication and deletion.
@@ -206,6 +207,9 @@ The backend currently allows requests from the Vite frontend running on:
 | GET | `/admins/transaction/history?user_id={user_id}` | Admin | Returns a user's transaction history. |
 | GET | `/admins/reviews?user_id={user_id}` | Admin | Lists reviews associated with a user. |
 | DELETE | `/admins/reviews/{review_id}` | Admin | Deletes a review as an administrator. |
+| GET | `/admins/services?user_id={user_id}` | Admin | Lists services published by a user for moderation. |
+| PATCH | `/admins/services/{service_offer_id}/visibility` | Admin | Shows or hides a published service. |
+| DELETE | `/admins/services/{service_offer_id}` | Admin | Deletes a published service when it has no requests. |
 
 ### Portal
 

@@ -68,7 +68,11 @@ def list_available_service_offers(db: Session, user_id: int) -> list[ServiceOffe
     # Return only services the current user can purchase.
     return (
         db.query(ServiceOffer)
-        .filter(ServiceOffer.owner_id.is_not(None), ServiceOffer.owner_id != user_id)
+        .filter(
+            ServiceOffer.owner_id.is_not(None),
+            ServiceOffer.owner_id != user_id,
+            ServiceOffer.is_visible.is_(True),
+        )
         .order_by(ServiceOffer.id.asc())
         .all()
     )
@@ -130,6 +134,7 @@ def create_service_offer(
         price=price,
         image_key=image_key,
         owner_name=full_name or provider.email,
+        is_visible=True,
     )
     db.add(service_offer)
     db.commit()
