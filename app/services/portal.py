@@ -63,6 +63,18 @@ class PortalNotFoundError(Exception):
     pass
 
 
+def _stripe_object_to_dict(stripe_object) -> dict:
+    if isinstance(stripe_object, dict):
+        return stripe_object
+    if hasattr(stripe_object, "to_dict_recursive"):
+        return stripe_object.to_dict_recursive()
+    if hasattr(stripe_object, "to_dict"):
+        return stripe_object.to_dict()
+    if hasattr(stripe_object, "_data"):
+        return dict(stripe_object._data)
+    return stripe_object
+
+
 def build_portal_summary(db: Session, current_user) -> PortalUserSummary:
     # Convert the authenticated user into the DTO exposed by the API.
     full_name = " ".join(part for part in [current_user.name, current_user.surname] if part).strip()
@@ -328,21 +340,13 @@ def confirm_wallet_checkout_session_response(db: Session, user_id: int, session_
     if str(session.metadata.get("user_id")) != str(user_id):
         raise PortalNotFoundError("Checkout session does not belong to this user")
 
-    if session.payment_status != "paid":
-        raise StripePaymentError("Payment has not been completed")
-
-    try:
-        amount = int(session.metadata.get("amount", "0"))
-        if amount <= 0:
-            raise ValueError("Invalid recharge amount")
-        create_wallet_recharge(db, user_id, amount, session.id)
-    except ValueError as exc:
-        raise PortalNotFoundError(str(exc)) from exc
-
+    # Do not credit coins here. Stripe Checkout redirects are user-controlled;
+    # the wallet is updated only by the signed checkout.session.completed webhook.
     return get_wallet_response(db, user_id)
 
 
 def process_stripe_checkout_completed(db: Session, checkout_session: dict) -> None:
+    checkout_session = _stripe_object_to_dict(checkout_session)
     metadata = checkout_session.get("metadata") or {}
     if checkout_session.get("payment_status") != "paid":
         return
@@ -357,7 +361,45 @@ def process_stripe_checkout_completed(db: Session, checkout_session: dict) -> No
         raise StripePaymentError("Invalid Stripe checkout metadata")
 
     try:
-        create_wallet_recharge(db, user_id, amount, checkout_session["id"])
+        print(
+            "Crediting wallet from checkout.session.completed: "
+            f"user_id={user_id}, amount={amount}, session_id={checkout_session['id']}"
+        )
+        create_wallet_recharge(
+            db,
+            user_id,
+            amount,
+            checkout_session["id"],
+            checkout_session.get("payment_intent"),
+        )
+    except ValueError as exc:
+        raise PortalNotFoundError(str(exc)) from exc
+
+
+def process_stripe_payment_intent_succeeded(db: Session, payment_intent: dict) -> None:
+    payment_intent = _stripe_object_to_dict(payment_intent)
+    metadata = payment_intent.get("metadata") or {}
+
+    try:
+        user_id = int(metadata.get("user_id", "0"))
+        amount = int(metadata.get("amount", "0"))
+    except ValueError:
+        raise StripePaymentError("Invalid Stripe payment metadata")
+
+    if user_id <= 0 or amount <= 0:
+        raise StripePaymentError("Invalid Stripe payment metadata")
+
+    try:
+        print(
+            "Crediting wallet from payment_intent.succeeded: "
+            f"user_id={user_id}, amount={amount}, payment_intent_id={payment_intent['id']}"
+        )
+        create_wallet_recharge(
+            db,
+            user_id,
+            amount,
+            stripe_payment_intent_id=payment_intent["id"],
+        )
     except ValueError as exc:
         raise PortalNotFoundError(str(exc)) from exc
 

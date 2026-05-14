@@ -225,7 +225,7 @@ The backend currently allows requests from the Vite frontend running on:
 | GET | `/portal/wallet` | User | Returns wallet balance, status, and recharges. |
 | POST | `/portal/wallet/recharge` | User | Legacy endpoint that rejects direct recharges and requires Stripe Checkout. |
 | POST | `/portal/wallet/checkout-session` | User | Creates a Stripe Checkout session for a wallet recharge. |
-| POST | `/portal/wallet/checkout-session/{session_id}/confirm` | User | Confirms a paid Stripe Checkout session and returns the updated wallet. |
+| POST | `/portal/wallet/checkout-session/{session_id}/confirm` | User | Legacy status check that returns the wallet without crediting coins. |
 | POST | `/portal/stripe/webhook` | Stripe | Receives signed Stripe webhook events and credits paid wallet recharges. |
 | POST | `/portal/services/{service_offer_id}/request` | User | Requests a service and deducts the payment. |
 | POST | `/portal/services` | User | Publishes a new service offer. |

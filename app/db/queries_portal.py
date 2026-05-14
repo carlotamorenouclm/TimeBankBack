@@ -361,6 +361,7 @@ def create_wallet_recharge(
     user_id: int,
     amount: int,
     stripe_checkout_session_id: str | None = None,
+    stripe_payment_intent_id: str | None = None,
 ) -> UserWallet:
     # Update the balance and persist the recharge as a wallet movement.
     wallet = get_wallet_by_user_id(db, user_id)
@@ -373,6 +374,15 @@ def create_wallet_recharge(
         ).first()
         if existing_recharge is not None:
             return wallet
+    if stripe_payment_intent_id:
+        existing_recharge = db.query(WalletRecharge).filter(
+            WalletRecharge.stripe_payment_intent_id == stripe_payment_intent_id
+        ).first()
+        if existing_recharge is not None:
+            if stripe_checkout_session_id and not existing_recharge.stripe_checkout_session_id:
+                existing_recharge.stripe_checkout_session_id = stripe_checkout_session_id
+                db.commit()
+            return wallet
 
     wallet.balance += amount
     db.add(
@@ -380,6 +390,7 @@ def create_wallet_recharge(
             user_id=user_id,
             amount=amount,
             stripe_checkout_session_id=stripe_checkout_session_id,
+            stripe_payment_intent_id=stripe_payment_intent_id,
         )
     )
     db.commit()

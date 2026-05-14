@@ -66,6 +66,7 @@ class WalletRecharge(Base):
     user_id = Column(Integer, ForeignKey("user_wallets.user_id"), nullable=False, index=True)
     amount = Column(Integer, nullable=False)
     stripe_checkout_session_id = Column(String(255), nullable=True, unique=True, index=True)
+    stripe_payment_intent_id = Column(String(255), nullable=True, unique=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 

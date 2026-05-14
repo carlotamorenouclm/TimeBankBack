@@ -62,6 +62,9 @@ def ensure_portal_schema_updates() -> None:
             "stripe_checkout_session_id": (
                 "ALTER TABLE wallet_recharges ADD COLUMN stripe_checkout_session_id VARCHAR(255) NULL UNIQUE"
             ),
+            "stripe_payment_intent_id": (
+                "ALTER TABLE wallet_recharges ADD COLUMN stripe_payment_intent_id VARCHAR(255) NULL UNIQUE"
+            ),
         },
         "user_transactions": {
             "has_unseen_update": (

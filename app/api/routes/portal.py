@@ -1,4 +1,8 @@
 # User portal routes: receive HTTP and delegate business logic to the service layer.
+import logging
+from pathlib import Path
+import traceback
+
 import stripe
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from sqlalchemy.orm import Session
@@ -40,10 +44,19 @@ from app.services.portal import (
     get_wallet_response,
     mark_history_notifications_seen_response,
     process_stripe_checkout_completed,
+    process_stripe_payment_intent_succeeded,
     reject_inbox_request_response,
 )
 
 router = APIRouter()
+
+webhook_logger = logging.getLogger("stripe_webhook")
+if not webhook_logger.handlers:
+    log_path = Path(__file__).resolve().parents[3] / "stripe_webhook_debug.log"
+    file_handler = logging.FileHandler(log_path)
+    file_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+    webhook_logger.addHandler(file_handler)
+    webhook_logger.setLevel(logging.INFO)
 
 
 @router.get("/summary", response_model=PortalUserSummary, status_code=status.HTTP_200_OK)
@@ -184,11 +197,29 @@ async def stripe_webhook(
     except (ValueError, stripe.error.SignatureVerificationError) as exc:
         raise HTTPException(status_code=400, detail="Invalid Stripe webhook payload") from exc
 
+    print(f"Stripe webhook received: {event['type']}")
+    webhook_logger.info("Stripe webhook received: %s", event["type"])
+
     if event["type"] == "checkout.session.completed":
         try:
             process_stripe_checkout_completed(db, event["data"]["object"])
         except (PortalNotFoundError, StripePaymentError) as exc:
+            webhook_logger.exception("Stripe checkout webhook rejected: %s", exc)
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except Exception as exc:
+            traceback.print_exc()
+            webhook_logger.exception("Stripe checkout webhook failed: %s", exc)
+            raise HTTPException(status_code=500, detail=f"Stripe webhook processing failed: {exc}") from exc
+    elif event["type"] == "payment_intent.succeeded":
+        try:
+            process_stripe_payment_intent_succeeded(db, event["data"]["object"])
+        except (PortalNotFoundError, StripePaymentError) as exc:
+            webhook_logger.exception("Stripe payment intent webhook rejected: %s", exc)
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except Exception as exc:
+            traceback.print_exc()
+            webhook_logger.exception("Stripe payment intent webhook failed: %s", exc)
+            raise HTTPException(status_code=500, detail=f"Stripe webhook processing failed: {exc}") from exc
 
     return {"received": True}
 
