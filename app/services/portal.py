@@ -1,3 +1,8 @@
+"""
+Contiene logica de negocio reutilizable entre rutas y consultas.
+
+Comentarios generados para documentar la intencion de cada bloque principal.
+"""
 # Portal service layer: orchestrates queries and maps ORM models to DTOs.
 import stripe
 from sqlalchemy.orm import Session
@@ -48,21 +53,25 @@ from app.schemas.portal import (
 )
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class StripePaymentError(Exception):
     pass
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def _configure_stripe() -> None:
     if not settings.STRIPE_SECRET_KEY:
         raise StripePaymentError("Stripe secret key is not configured")
     stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class PortalNotFoundError(Exception):
     # Domain-level exception so the service layer stays independent from FastAPI.
     pass
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def _stripe_object_to_dict(stripe_object) -> dict:
     if isinstance(stripe_object, dict):
         return stripe_object
@@ -75,6 +84,7 @@ def _stripe_object_to_dict(stripe_object) -> dict:
     return stripe_object
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def build_portal_summary(db: Session, current_user) -> PortalUserSummary:
     # Convert the authenticated user into the DTO exposed by the API.
     full_name = " ".join(part for part in [current_user.name, current_user.surname] if part).strip()
@@ -99,11 +109,13 @@ def build_portal_summary(db: Session, current_user) -> PortalUserSummary:
     )
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def _build_service_offer_list(db: Session, offers) -> list[ServiceOfferOut]:
     # Reuse one ORM -> DTO conversion path for every service list response.
     return [_build_service_offer_response(db, item) for item in offers]
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def _build_service_offer_response(db: Session, offer) -> ServiceOfferOut:
     # Keep single-item service mapping aligned with list responses.
     return ServiceOfferOut.model_validate(offer).model_copy(
@@ -113,6 +125,7 @@ def _build_service_offer_response(db: Session, offer) -> ServiceOfferOut:
     )
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def get_dashboard_response(db: Session, user_id: int) -> DashboardResponse:
     # Split purchasable services from owned services to support catalog tabs.
     services = _build_service_offer_list(db, list_available_service_offers(db, user_id))
@@ -120,6 +133,7 @@ def get_dashboard_response(db: Session, user_id: int) -> DashboardResponse:
     return DashboardResponse(services=services, my_services=my_services)
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def get_history_response(db: Session, user_id: int) -> HistoryResponse:
     # Build the history response by mapping each database row into TransactionOut.
     transactions = []
@@ -196,6 +210,7 @@ def get_history_response(db: Session, user_id: int) -> HistoryResponse:
     return HistoryResponse(transactions=transactions)
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def mark_history_notifications_seen_response(
     db: Session,
     user_id: int,
@@ -204,6 +219,7 @@ def mark_history_notifications_seen_response(
     mark_user_transaction_updates_seen(db, user_id, transaction_type)
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def _build_inbox_response(request_rows) -> InboxResponse:
     # Keep inbox mapping in one place so GET and accept/reject share the same format.
     requests = [
@@ -226,10 +242,12 @@ def _build_inbox_response(request_rows) -> InboxResponse:
     return InboxResponse(requests=requests)
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def get_inbox_response(db: Session, user_id: int) -> InboxResponse:
     return _build_inbox_response(list_received_requests(db, user_id))
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def accept_inbox_request_response(
     db: Session,
     user_id: int,
@@ -245,6 +263,7 @@ def accept_inbox_request_response(
     return get_inbox_response(db, user_id)
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def reject_inbox_request_response(
     db: Session,
     user_id: int,
@@ -259,6 +278,7 @@ def reject_inbox_request_response(
     return get_inbox_response(db, user_id)
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def complete_request_response(db: Session, user_id: int, request_id: int) -> HistoryResponse:
     request_row = get_request_for_user(db, request_id, user_id)
     if request_row is None:
@@ -273,6 +293,7 @@ def complete_request_response(db: Session, user_id: int, request_id: int) -> His
     return get_history_response(db, user_id)
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def get_wallet_response(db: Session, user_id: int) -> WalletResponse:
     wallet = get_wallet_by_user_id(db, user_id)
     if wallet is None:
@@ -286,6 +307,7 @@ def get_wallet_response(db: Session, user_id: int) -> WalletResponse:
     return WalletResponse(balance=wallet.balance, status=wallet.status, recharges=recharges)
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def recharge_wallet_response(db: Session, user_id: int, amount: int) -> WalletResponse:
     try:
         create_wallet_recharge(db, user_id, amount)
@@ -296,6 +318,7 @@ def recharge_wallet_response(db: Session, user_id: int, amount: int) -> WalletRe
     return get_wallet_response(db, user_id)
 
 
+# Crea o registra el recurso solicitado y prepara la respuesta.
 def create_wallet_checkout_session_response(user_id: int, amount: int) -> dict:
     _configure_stripe()
 
@@ -329,6 +352,7 @@ def create_wallet_checkout_session_response(user_id: int, amount: int) -> dict:
     return {"session_id": session.id, "checkout_url": session.url}
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def confirm_wallet_checkout_session_response(db: Session, user_id: int, session_id: str) -> WalletResponse:
     _configure_stripe()
 
@@ -345,6 +369,7 @@ def confirm_wallet_checkout_session_response(db: Session, user_id: int, session_
     return get_wallet_response(db, user_id)
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def process_stripe_checkout_completed(db: Session, checkout_session: dict) -> None:
     checkout_session = _stripe_object_to_dict(checkout_session)
     metadata = checkout_session.get("metadata") or {}
@@ -376,6 +401,7 @@ def process_stripe_checkout_completed(db: Session, checkout_session: dict) -> No
         raise PortalNotFoundError(str(exc)) from exc
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def process_stripe_payment_intent_succeeded(db: Session, payment_intent: dict) -> None:
     payment_intent = _stripe_object_to_dict(payment_intent)
     metadata = payment_intent.get("metadata") or {}
@@ -404,6 +430,7 @@ def process_stripe_payment_intent_succeeded(db: Session, payment_intent: dict) -
         raise PortalNotFoundError(str(exc)) from exc
 
 
+# Crea o registra el recurso solicitado y prepara la respuesta.
 def create_purchase_request_response(
     db: Session,
     requester,
@@ -451,6 +478,7 @@ def create_purchase_request_response(
     )
 
 
+# Crea o registra el recurso solicitado y prepara la respuesta.
 def create_service_offer_response(
     db: Session,
     provider,
@@ -494,6 +522,7 @@ def create_service_offer_response(
     )
 
 
+# Elimina o desactiva el recurso indicado segun la regla de negocio.
 def delete_service_offer_response(
     db: Session,
     provider_id: int,

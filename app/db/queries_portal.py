@@ -1,3 +1,8 @@
+"""
+Encapsula consultas y acceso a base de datos para mantener limpias las rutas.
+
+Comentarios generados para documentar la intencion de cada bloque principal.
+"""
 # Portal queries plus cleanup helpers for catalog, inbox, wallet, and history.
 from datetime import datetime
 
@@ -16,6 +21,7 @@ from app.models.users import User
 LEGACY_DEMO_USER_EMAILS = ["seller.demo@timebank.local"]
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def ensure_user_portal_data(db: Session, user: User) -> None:
     # Keep only the wallet bootstrap for new users, without fake requests or history.
     wallet = db.query(UserWallet).filter(UserWallet.user_id == user.id).first()
@@ -25,6 +31,7 @@ def ensure_user_portal_data(db: Session, user: User) -> None:
     db.commit()
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def cleanup_seeded_portal_data(db: Session) -> None:
     # Remove old demo records so only real database content remains visible.
     demo_users = db.query(User).filter(User.email.in_(LEGACY_DEMO_USER_EMAILS)).all()
@@ -59,11 +66,13 @@ def cleanup_seeded_portal_data(db: Session) -> None:
     ).delete(synchronize_session=False)
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def list_service_offers(db: Session) -> list[ServiceOffer]:
     # Return the full catalog in a stable order.
     return db.query(ServiceOffer).order_by(ServiceOffer.id.asc()).all()
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def list_available_service_offers(db: Session, user_id: int) -> list[ServiceOffer]:
     # Return only services the current user can purchase.
     return (
@@ -78,6 +87,7 @@ def list_available_service_offers(db: Session, user_id: int) -> list[ServiceOffe
     )
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def list_owned_service_offers(db: Session, user_id: int) -> list[ServiceOffer]:
     # Return only the services published by the current user.
     return (
@@ -88,10 +98,12 @@ def list_owned_service_offers(db: Session, user_id: int) -> list[ServiceOffer]:
     )
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def get_service_offer_by_id(db: Session, service_offer_id: int) -> ServiceOffer | None:
     return db.query(ServiceOffer).filter(ServiceOffer.id == service_offer_id).first()
 
 
+# Elimina o desactiva el recurso indicado segun la regla de negocio.
 def delete_service_offer(db: Session, service_offer: ServiceOffer) -> int:
     # Delete a service publication only when it is not referenced by any request.
     linked_requests = (
@@ -108,6 +120,7 @@ def delete_service_offer(db: Session, service_offer: ServiceOffer) -> int:
     return deleted_service_id
 
 
+# Crea o registra el recurso solicitado y prepara la respuesta.
 def create_service_offer(
     db: Session,
     provider: User,
@@ -142,6 +155,7 @@ def create_service_offer(
     return service_offer
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def list_user_transactions(db: Session, user_id: int) -> list[UserTransaction]:
     return (
         db.query(UserTransaction)
@@ -151,6 +165,7 @@ def list_user_transactions(db: Session, user_id: int) -> list[UserTransaction]:
     )
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def mark_user_transaction_updates_seen(db: Session, user_id: int, transaction_type: str) -> None:
     db.query(UserTransaction).filter(
         UserTransaction.user_id == user_id,
@@ -160,6 +175,7 @@ def mark_user_transaction_updates_seen(db: Session, user_id: int, transaction_ty
     db.commit()
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def mark_transaction_update_unseen(db: Session, transaction_id: int | None) -> None:
     if transaction_id is None:
         return
@@ -170,6 +186,7 @@ def mark_transaction_update_unseen(db: Session, transaction_id: int | None) -> N
     db.commit()
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def mark_request_transaction_update_seen(
     db: Session,
     request_row: ServiceRequest,
@@ -191,10 +208,12 @@ def mark_request_transaction_update_seen(
     db.commit()
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def get_transaction_by_id(db: Session, transaction_id: int) -> UserTransaction | None:
     return db.query(UserTransaction).filter(UserTransaction.id == transaction_id).first()
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def get_request_by_transaction_id(db: Session, transaction_id: int) -> ServiceRequest | None:
     # Link a buyer history movement with its original service request when it exists.
     return (
@@ -204,6 +223,7 @@ def get_request_by_transaction_id(db: Session, transaction_id: int) -> ServiceRe
     )
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def list_received_requests(db: Session, user_id: int) -> list[ServiceRequest]:
     return (
         db.query(ServiceRequest)
@@ -213,6 +233,7 @@ def list_received_requests(db: Session, user_id: int) -> list[ServiceRequest]:
     )
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def count_pending_received_requests(db: Session, user_id: int) -> int:
     return (
         db.query(ServiceRequest)
@@ -221,6 +242,7 @@ def count_pending_received_requests(db: Session, user_id: int) -> int:
     )
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def get_request_for_receiver(db: Session, request_id: int, receiver_id: int) -> ServiceRequest | None:
     # Ensure only requests owned by the authenticated receiver can be changed.
     return (
@@ -230,6 +252,7 @@ def get_request_for_receiver(db: Session, request_id: int, receiver_id: int) -> 
     )
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def accept_request(db: Session, request_row: ServiceRequest, clarification: str) -> ServiceRequest:
     # Accepting a request also finalizes the related history transaction.
     request_row.status = "accepted"
@@ -263,6 +286,7 @@ def accept_request(db: Session, request_row: ServiceRequest, clarification: str)
     return request_row
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def reject_request(db: Session, request_row: ServiceRequest, reason: str) -> ServiceRequest:
     request_row.status = "rejected"
     request_row.reject_reason = reason
@@ -300,6 +324,7 @@ def reject_request(db: Session, request_row: ServiceRequest, reason: str) -> Ser
     return request_row
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def get_request_for_user(db: Session, request_id: int, user_id: int) -> ServiceRequest | None:
     return (
         db.query(ServiceRequest)
@@ -311,6 +336,7 @@ def get_request_for_user(db: Session, request_id: int, user_id: int) -> ServiceR
     )
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def complete_request(db: Session, request_row: ServiceRequest) -> ServiceRequest:
     if request_row.status != "accepted":
         raise ValueError("Only accepted requests can be completed")
@@ -343,10 +369,12 @@ def complete_request(db: Session, request_row: ServiceRequest) -> ServiceRequest
     return request_row
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def get_wallet_by_user_id(db: Session, user_id: int) -> UserWallet | None:
     return db.query(UserWallet).filter(UserWallet.user_id == user_id).first()
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def list_wallet_recharges(db: Session, user_id: int) -> list[WalletRecharge]:
     return (
         db.query(WalletRecharge)
@@ -356,6 +384,7 @@ def list_wallet_recharges(db: Session, user_id: int) -> list[WalletRecharge]:
     )
 
 
+# Crea o registra el recurso solicitado y prepara la respuesta.
 def create_wallet_recharge(
     db: Session,
     user_id: int,
@@ -398,6 +427,7 @@ def create_wallet_recharge(
     return wallet
 
 
+# Crea o registra el recurso solicitado y prepara la respuesta.
 def create_purchase_request(
     db: Session,
     requester: User,

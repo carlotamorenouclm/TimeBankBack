@@ -1,3 +1,8 @@
+"""
+Define modelos SQLAlchemy que representan tablas de la base de datos.
+
+Comentarios generados para documentar la intencion de cada bloque principal.
+"""
 # ORM models for the user portal: catalog, requests, wallet, and history.
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
@@ -6,6 +11,7 @@ from sqlalchemy.sql import func
 from app.models.users import Base
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class ServiceOffer(Base):
     __tablename__ = "service_offers"
 
@@ -25,6 +31,7 @@ class ServiceOffer(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class ServiceRequest(Base):
     __tablename__ = "service_requests"
 
@@ -49,6 +56,7 @@ class ServiceRequest(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class UserWallet(Base):
     __tablename__ = "user_wallets"
 
@@ -59,6 +67,7 @@ class UserWallet(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class WalletRecharge(Base):
     __tablename__ = "wallet_recharges"
 
@@ -70,6 +79,7 @@ class WalletRecharge(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class UserTransaction(Base):
     __tablename__ = "user_transactions"
 

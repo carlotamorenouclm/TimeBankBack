@@ -1,3 +1,8 @@
+"""
+Expone endpoints HTTP y adapta peticiones/respuestas del dominio.
+
+Comentarios generados para documentar la intencion de cada bloque principal.
+"""
 # Chat routes for messages between requester and provider.
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -16,6 +21,7 @@ from app.services.chat import (
 router = APIRouter()
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 @router.get(
     "/requests/{request_id}/messages",
     response_model=ChatMessagesResponse,
@@ -32,6 +38,7 @@ def get_chat_messages(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 @router.post(
     "/requests/{request_id}/messages",
     response_model=ChatMessagesResponse,
@@ -49,6 +56,7 @@ def send_chat_message(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 @router.get(
     "/threads/{thread_key}/messages",
     response_model=ChatMessagesResponse,
@@ -62,6 +70,7 @@ def get_thread_messages(
     return get_thread_messages_response(db, thread_key, current_user.id)
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 @router.post(
     "/threads/{thread_key}/messages",
     response_model=ChatMessagesResponse,

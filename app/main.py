@@ -1,3 +1,8 @@
+"""
+Punto de entrada de FastAPI: registra middlewares, rutas y arranque de la aplicacion.
+
+Comentarios generados para documentar la intencion de cada bloque principal.
+"""
 # Punto de entrada de FastAPI: crea app, middlewares, startup y registro de rutas.
 from fastapi import FastAPI
 from app.db.session import create_tables
@@ -17,6 +22,7 @@ from app.api.routes.reviews import router as reviews_router
 app = FastAPI(title="TimeBankBack")
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 @app.on_event("startup")
 def on_startup() -> None:
     # Start with the schema ready and remove old demo data automatically.
@@ -43,6 +49,7 @@ app.add_middleware(
 )
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 @app.get("/health")
 def health():
     return {"status": "ok"}

@@ -1,9 +1,15 @@
+"""
+Define esquemas Pydantic para validar entradas y serializar respuestas.
+
+Comentarios generados para documentar la intencion de cada bloque principal.
+"""
 # Pydantic DTOs and payloads for the portal area that travel through the API.
 from datetime import datetime
 
 from pydantic import BaseModel, Field, model_validator
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class PortalUserSummary(BaseModel):
     id: int
     name: str
@@ -15,6 +21,7 @@ class PortalUserSummary(BaseModel):
     pending_sales_count: int = 0
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class ServiceOfferOut(BaseModel):
     id: int
     owner_id: int | None = None
@@ -30,15 +37,18 @@ class ServiceOfferOut(BaseModel):
     is_visible: bool = True
     overall_rating: float | None = None
 
+    # Define esta clase y agrupa los datos que pertenecen a la entidad.
     class Config:
         from_attributes = True
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class DashboardResponse(BaseModel):
     services: list[ServiceOfferOut]
     my_services: list[ServiceOfferOut] = []
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class TransactionOut(BaseModel):
     id: int
     request_id: int | None = None
@@ -58,14 +68,17 @@ class TransactionOut(BaseModel):
     reject_reason: str | None = None
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class HistoryResponse(BaseModel):
     transactions: list[TransactionOut]
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class MarkHistoryNotificationsPayload(BaseModel):
     transaction_type: str = Field(..., pattern="^(Purchase|Sale)$")
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class InboxRequestOut(BaseModel):
     id: int
     service: str
@@ -81,39 +94,47 @@ class InboxRequestOut(BaseModel):
     requester_name: str
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class InboxResponse(BaseModel):
     requests: list[InboxRequestOut]
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class AcceptRequestPayload(BaseModel):
     clarification: str = Field(default="", max_length=500)
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class RejectRequestPayload(BaseModel):
     reason: str = Field(..., min_length=1, max_length=500)
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class WalletRechargeOut(BaseModel):
     id: int
     date: str
     amount: int
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class WalletResponse(BaseModel):
     balance: int
     status: str
     recharges: list[WalletRechargeOut]
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class RechargePayload(BaseModel):
     amount: int = Field(..., gt=0, le=1000)
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class StripeCheckoutSessionResponse(BaseModel):
     session_id: str
     checkout_url: str
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class CreateServiceRequestPayload(BaseModel):
     scheduled_at: str = Field(..., min_length=3, max_length=255)
     street: str = Field(..., min_length=2, max_length=255)
@@ -123,12 +144,14 @@ class CreateServiceRequestPayload(BaseModel):
     message: str | None = Field(default=None, max_length=500)
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class CreateServiceRequestResponse(BaseModel):
     request_id: int
     message: str
     new_balance: int
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class CreateServiceOfferPayload(BaseModel):
     title: str = Field(..., min_length=3, max_length=255)
     description: str = Field(..., min_length=10, max_length=1000)
@@ -142,6 +165,7 @@ class CreateServiceOfferPayload(BaseModel):
     price: int = Field(..., gt=0, le=1000)
     image_key: str = Field(..., min_length=2, max_length=12_000_000)
 
+    # Encapsula una parte concreta de la logica de la aplicacion.
     @model_validator(mode="after")
     def validate_location(self):
         if not self.home_service and (not self.street or not self.street_number):
@@ -156,20 +180,24 @@ class CreateServiceOfferPayload(BaseModel):
         return self
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class CreateServiceOfferResponse(BaseModel):
     message: str
     service: ServiceOfferOut
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class DeleteServiceOfferResponse(BaseModel):
     message: str
     deleted_service_id: int
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class UpdateServiceVisibilityPayload(BaseModel):
     is_visible: bool
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def format_datetime(value: datetime) -> str:
     # Single date format for values returned to the frontend.
     return value.strftime("%Y-%m-%d")

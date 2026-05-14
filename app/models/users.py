@@ -1,3 +1,8 @@
+"""
+Define modelos SQLAlchemy que representan tablas de la base de datos.
+
+Comentarios generados para documentar la intencion de cada bloque principal.
+"""
 # Main user ORM model and shared SQLAlchemy base.
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
@@ -6,6 +11,7 @@ from sqlalchemy.sql import func
 Base = declarative_base()
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class User(Base):
     __tablename__ = "users"
 

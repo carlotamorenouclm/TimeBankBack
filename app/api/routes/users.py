@@ -1,3 +1,8 @@
+"""
+Expone endpoints HTTP y adapta peticiones/respuestas del dominio.
+
+Comentarios generados para documentar la intencion de cada bloque principal.
+"""
 # Rutas CRUD basicas de usuarios y registro publico.
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
@@ -17,18 +22,21 @@ from app.db.queries_users import (
 router = APIRouter()
 
 
+# Crea o registra el recurso solicitado y prepara la respuesta.
 @router.post("/signup", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def create_user(payload: UserCreate, db: Session = Depends(get_db)):
     if get_user_by_email(db, payload.email):
         raise HTTPException(status_code=409, detail="Error registering")
     return add_user(db, payload.email, payload.password, payload.name, payload.surname)
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 @router.get("", response_model=list[UserOut], status_code=status.HTTP_200_OK, 
             dependencies=[Depends(check_admin)])
 def get_users(db: Session = Depends(get_db)):
     return list_users(db)
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 @router.get("/{user_id:int}", response_model=UserOut, status_code=status.HTTP_200_OK, 
             dependencies=[Depends(check_admin)])
 def get_user(user_id: int, db: Session = Depends(get_db)):
@@ -38,6 +46,7 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
     return user
 
 
+# Elimina o desactiva el recurso indicado segun la regla de negocio.
 @router.delete("/delete/{user_id}", status_code=status.HTTP_204_NO_CONTENT, 
                dependencies=[Depends(check_admin)])
 def remove_user(user_id: int, db: Session = Depends(get_db)):
@@ -46,6 +55,7 @@ def remove_user(user_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
+# Actualiza los datos existentes con la informacion recibida.
 @router.post("/update/{user_id:int}", status_code=status.HTTP_200_OK,
              dependencies=[Depends(check_admin)])
 def update_user_info(user_id: int, payload: UserUpdate, db: Session = Depends(get_db)):

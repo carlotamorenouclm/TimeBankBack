@@ -1,3 +1,8 @@
+"""
+Define modelos SQLAlchemy que representan tablas de la base de datos.
+
+Comentarios generados para documentar la intencion de cada bloque principal.
+"""
 # ORM model for conversations linked to requests or history transactions.
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.sql import func
@@ -5,6 +10,7 @@ from sqlalchemy.sql import func
 from app.models.users import Base
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
 

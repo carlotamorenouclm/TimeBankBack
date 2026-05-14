@@ -1,3 +1,8 @@
+"""
+Gestiona la autenticacion de usuarios y la lectura del token activo.
+
+Comentarios generados para documentar la intencion de cada bloque principal.
+"""
 # Dependencias de autenticacion/autorizacion reutilizadas por las rutas.
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
@@ -10,13 +15,14 @@ from app.db.session import get_db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def aut_user( email: str, password: str, db: Session = Depends(get_db)) -> UserOut:
-    # Valida credenciales en login usando email y password plano.
     user = get_user_by_email(db, email)
     if not user or not verify_password(password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     return user
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 async def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)) -> UserOut:
     # Resuelve el usuario actual a partir del JWT enviado en Authorization.
     payload = decode_token(token)
@@ -30,6 +36,7 @@ async def get_current_user(db: Session = Depends(get_db), token: str = Depends(o
         raise HTTPException(status_code=403, detail="Inactive user")
     return user
 
+# Comprueba credenciales, permisos o condiciones antes de continuar.
 def check_admin(user: UserOut = Depends(get_current_user)):
     # Dependency para restringir rutas solo a administradores.
     if user.role != "ADMIN":

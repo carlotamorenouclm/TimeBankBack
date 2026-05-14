@@ -1,3 +1,8 @@
+"""
+Contiene logica de negocio reutilizable entre rutas y consultas.
+
+Comentarios generados para documentar la intencion de cada bloque principal.
+"""
 # Service layer for request chats.
 from sqlalchemy.orm import Session
 
@@ -15,10 +20,12 @@ from app.schemas.chat import ChatMessageOut, ChatMessagesResponse
 from app.schemas.portal import format_datetime
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class ChatNotFoundError(Exception):
     pass
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def _sender_name(db: Session, sender_id: int) -> str:
     sender = get_user_by_id(db, sender_id)
     if sender is None:
@@ -27,6 +34,7 @@ def _sender_name(db: Session, sender_id: int) -> str:
     return full_name or sender.email
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def _build_chat_response(db: Session, request_id: int, user_id: int) -> ChatMessagesResponse:
     messages = [
         ChatMessageOut(
@@ -43,6 +51,7 @@ def _build_chat_response(db: Session, request_id: int, user_id: int) -> ChatMess
     return ChatMessagesResponse(messages=messages)
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def get_chat_messages_response(db: Session, request_id: int, user_id: int) -> ChatMessagesResponse:
     request_row = get_request_for_chat(db, request_id, user_id)
     if request_row is None:
@@ -51,6 +60,7 @@ def get_chat_messages_response(db: Session, request_id: int, user_id: int) -> Ch
     return _build_chat_response(db, request_id, user_id)
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def send_chat_message_response(
     db: Session,
     request_id: int,
@@ -69,6 +79,7 @@ def send_chat_message_response(
     return _build_chat_response(db, request_id, user_id)
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def get_thread_messages_response(db: Session, thread_key: str, user_id: int) -> ChatMessagesResponse:
     mark_thread_messages_read(db, thread_key, user_id)
     messages = [
@@ -87,6 +98,7 @@ def get_thread_messages_response(db: Session, thread_key: str, user_id: int) -> 
     return ChatMessagesResponse(messages=messages)
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def send_thread_message_response(
     db: Session,
     thread_key: str,

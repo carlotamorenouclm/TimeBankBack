@@ -1,8 +1,14 @@
+"""
+Define modelos SQLAlchemy que representan tablas de la base de datos.
+
+Comentarios generados para documentar la intencion de cada bloque principal.
+"""
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.sql import func
 
 from app.models.users import Base
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class TransactionReview(Base):
     __tablename__ = "transaction_reviews"
 

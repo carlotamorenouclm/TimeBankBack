@@ -1,3 +1,8 @@
+"""
+Expone endpoints HTTP y adapta peticiones/respuestas del dominio.
+
+Comentarios generados para documentar la intencion de cada bloque principal.
+"""
 # Ruta de autenticacion que intercambia credenciales por un JWT.
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -12,6 +17,7 @@ from app.schemas.user import UserOut
 
 router = APIRouter()
 
+# Comprueba credenciales, permisos o condiciones antes de continuar.
 @router.post("/token", response_model=Token, tags=["auth"])
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = aut_user(db=db, email=form_data.username, password=form_data.password)

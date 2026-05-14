@@ -1,3 +1,8 @@
+"""
+Expone endpoints HTTP y adapta peticiones/respuestas del dominio.
+
+Comentarios generados para documentar la intencion de cada bloque principal.
+"""
 # User portal routes: receive HTTP and delegate business logic to the service layer.
 import logging
 from pathlib import Path
@@ -59,23 +64,27 @@ if not webhook_logger.handlers:
     webhook_logger.setLevel(logging.INFO)
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 @router.get("/summary", response_model=PortalUserSummary, status_code=status.HTTP_200_OK)
 def get_portal_summary(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     # La ruta solo resuelve dependencias HTTP y delega el formato de salida.
     return build_portal_summary(db, current_user)
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 @router.get("/dashboard", response_model=DashboardResponse, status_code=status.HTTP_200_OK)
 def get_dashboard(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     # current_user protects the route even though its fields are not used here.
     return get_dashboard_response(db, current_user.id)
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 @router.get("/history", response_model=HistoryResponse, status_code=status.HTTP_200_OK)
 def get_history(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     return get_history_response(db, current_user.id)
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 @router.post("/history/notifications/read", response_model=PortalUserSummary, status_code=status.HTTP_200_OK)
 def mark_history_notifications_read(
     payload: MarkHistoryNotificationsPayload,
@@ -86,11 +95,13 @@ def mark_history_notifications_read(
     return build_portal_summary(db, current_user)
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 @router.get("/inbox", response_model=InboxResponse, status_code=status.HTTP_200_OK)
 def get_inbox(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     return get_inbox_response(db, current_user.id)
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 @router.post("/inbox/{request_id}/accept", response_model=InboxResponse, status_code=status.HTTP_200_OK)
 def accept_inbox_request(
     request_id: int,
@@ -105,6 +116,7 @@ def accept_inbox_request(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 @router.post("/inbox/{request_id}/reject", response_model=InboxResponse, status_code=status.HTTP_200_OK)
 def reject_inbox_request(
     request_id: int,
@@ -118,6 +130,7 @@ def reject_inbox_request(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 @router.post("/requests/{request_id}/complete", response_model=HistoryResponse, status_code=status.HTTP_200_OK)
 def complete_request(
     request_id: int,
@@ -130,6 +143,7 @@ def complete_request(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 @router.get("/wallet", response_model=WalletResponse, status_code=status.HTTP_200_OK)
 def get_wallet(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     try:
@@ -138,6 +152,7 @@ def get_wallet(db: Session = Depends(get_db), current_user=Depends(get_current_u
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 @router.post("/wallet/recharge", response_model=WalletResponse, status_code=status.HTTP_200_OK)
 def recharge_wallet(
     payload: RechargePayload,
@@ -147,6 +162,7 @@ def recharge_wallet(
     raise HTTPException(status_code=400, detail="Wallet recharges must be paid through Stripe Checkout")
 
 
+# Crea o registra el recurso solicitado y prepara la respuesta.
 @router.post(
     "/wallet/checkout-session",
     response_model=StripeCheckoutSessionResponse,
@@ -162,6 +178,7 @@ def create_wallet_checkout_session(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 @router.post("/wallet/checkout-session/{session_id}/confirm", response_model=WalletResponse)
 def confirm_wallet_checkout_session(
     session_id: str,
@@ -176,6 +193,7 @@ def confirm_wallet_checkout_session(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 @router.post("/stripe/webhook", status_code=status.HTTP_200_OK)
 async def stripe_webhook(
     request: Request,
@@ -224,6 +242,7 @@ async def stripe_webhook(
     return {"received": True}
 
 
+# Crea o registra el recurso solicitado y prepara la respuesta.
 @router.post(
     "/services/{service_offer_id}/request",
     response_model=CreateServiceRequestResponse,
@@ -251,6 +270,7 @@ def create_service_request(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+# Crea o registra el recurso solicitado y prepara la respuesta.
 @router.post(
     "/services",
     response_model=CreateServiceOfferResponse,
@@ -281,6 +301,7 @@ def create_service_offer(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+# Elimina o desactiva el recurso indicado segun la regla de negocio.
 @router.delete(
     "/services/{service_offer_id}",
     response_model=DeleteServiceOfferResponse,

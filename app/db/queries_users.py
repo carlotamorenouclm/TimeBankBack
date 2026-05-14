@@ -1,3 +1,8 @@
+"""
+Encapsula consultas y acceso a base de datos para mantener limpias las rutas.
+
+Comentarios generados para documentar la intencion de cada bloque principal.
+"""
 # Consultas de usuario reutilizadas por registro, admin y autenticacion.
 from typing import Optional, List
 from sqlalchemy.orm import Session
@@ -9,6 +14,7 @@ from app.core.security import hash_password
 from app.db.queries_portal import ensure_user_portal_data
 
 
+# Crea o registra el recurso solicitado y prepara la respuesta.
 def add_user(
     db: Session,
     email: str,
@@ -33,18 +39,22 @@ def add_user(
     return user
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
     return db.query(User).filter(User.id == user_id).first()
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def get_user_by_email(db: Session, email: str) -> Optional[User]:
     return db.query(User).filter(User.email == email).first()
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def list_users(db: Session) -> List[User]:
     return db.query(User).filter(User.role == "USER").order_by(User.id.asc()).all()
 
 
+# Elimina o desactiva el recurso indicado segun la regla de negocio.
 def delete_user(db: Session, user_id: int) -> bool:
     user = get_user_by_id(db, user_id)
     if not user:
@@ -52,6 +62,7 @@ def delete_user(db: Session, user_id: int) -> bool:
     return delete_user_account(db, user)
 
 
+# Elimina o desactiva el recurso indicado segun la regla de negocio.
 def delete_user_account(db: Session, user: User) -> bool:
     # Remove dependent portal records before deleting the user account itself.
     owned_service_ids = [
@@ -103,6 +114,7 @@ def delete_user_account(db: Session, user: User) -> bool:
     db.commit()
     return True
 
+# Actualiza los datos existentes con la informacion recibida.
 def update_user(
     db: Session,
     user_id: int,
@@ -126,6 +138,7 @@ def update_user(
     db.refresh(user)
     return user
 
+# Actualiza los datos existentes con la informacion recibida.
 def update_password(db: Session, user_id: int, new_password: str) -> Optional[User]:
     user = get_user_by_id(db, user_id)
     if not user:

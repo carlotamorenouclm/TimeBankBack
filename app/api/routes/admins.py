@@ -1,3 +1,8 @@
+"""
+Expone endpoints HTTP y adapta peticiones/respuestas del dominio.
+
+Comentarios generados para documentar la intencion de cada bloque principal.
+"""
 # Admin-area routes for listing admins and updating user roles.
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
@@ -34,12 +39,14 @@ from app.services.portal import _build_service_offer_response
 router = APIRouter()
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 @router.get("", response_model=list[UserOut], status_code=status.HTTP_200_OK, 
             dependencies=[Depends(check_admin)])
 def get_admins(db: Session = Depends(get_db)):
     return list_admins(db)
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 @router.post("/updateRole/{user_id:int}", status_code=status.HTTP_200_OK,
              dependencies=[Depends(check_admin)])
 def change_role(user_id: int, body: UserUpdateRole, db: Session = Depends(get_db)):
@@ -54,6 +61,7 @@ def change_role(user_id: int, body: UserUpdateRole, db: Session = Depends(get_db
     return Response(status_code=status.HTTP_200_OK, content="Role updated successfully")
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 @router.post("/update/is-active/{user_id:int}", status_code=status.HTTP_200_OK,
              dependencies=[Depends(check_admin)])
 def change_is_active(user_id: int, body: UserUpdateActive, db: Session = Depends(get_db)):
@@ -66,6 +74,7 @@ def change_is_active(user_id: int, body: UserUpdateActive, db: Session = Depends
     )
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 @router.post("/wallet/balance/{user_id:int}", response_model=WalletResponse, status_code=status.HTTP_200_OK,
              dependencies=[Depends(check_admin)])
 def change_wallet_balance(user_id: int, body: UserUpdateCoins, db: Session = Depends(get_db)):
@@ -75,6 +84,7 @@ def change_wallet_balance(user_id: int, body: UserUpdateCoins, db: Session = Dep
     return get_wallet_response(db, user_id)
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 @router.get("/wallet/history", response_model=WalletResponse, status_code=status.HTTP_200_OK,
             dependencies=[Depends(check_admin)])
 def get_user_wallet_history(user_id: int, db: Session = Depends(get_db)):
@@ -86,6 +96,7 @@ def get_user_wallet_history(user_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 @router.get("/transaction/history", response_model=HistoryResponse, status_code=status.HTTP_200_OK,
             dependencies=[Depends(check_admin)])
 def get_user_transaction_history(user_id: int, db: Session = Depends(get_db)):
@@ -94,6 +105,7 @@ def get_user_transaction_history(user_id: int, db: Session = Depends(get_db)):
     return get_history_response(db, user_id)
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 @router.get("/reviews", response_model=list[TransactionReviewOut], status_code=status.HTTP_200_OK,
             dependencies=[Depends(check_admin)])
 def get_user_reviews(user_id: int, db: Session = Depends(get_db)):
@@ -102,6 +114,7 @@ def get_user_reviews(user_id: int, db: Session = Depends(get_db)):
     return get_user_reviews_for_admin_response(db, user_id)
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 @router.get("/services", response_model=list[ServiceOfferOut], status_code=status.HTTP_200_OK,
             dependencies=[Depends(check_admin)])
 def get_user_service_offers(user_id: int, db: Session = Depends(get_db)):
@@ -113,6 +126,7 @@ def get_user_service_offers(user_id: int, db: Session = Depends(get_db)):
     ]
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 @router.patch("/services/{service_offer_id:int}/visibility", response_model=ServiceOfferOut,
               status_code=status.HTTP_200_OK, dependencies=[Depends(check_admin)])
 def change_service_offer_visibility(
@@ -132,6 +146,7 @@ def change_service_offer_visibility(
     return _build_service_offer_response(db, updated_service_offer)
 
 
+# Elimina o desactiva el recurso indicado segun la regla de negocio.
 @router.delete("/services/{service_offer_id:int}", response_model=DeleteServiceOfferResponse,
                status_code=status.HTTP_200_OK, dependencies=[Depends(check_admin)])
 def delete_user_service_offer(service_offer_id: int, db: Session = Depends(get_db)):
@@ -150,6 +165,7 @@ def delete_user_service_offer(service_offer_id: int, db: Session = Depends(get_d
     )
 
 
+# Elimina o desactiva el recurso indicado segun la regla de negocio.
 @router.delete("/reviews/{review_id:int}", status_code=status.HTTP_204_NO_CONTENT,
                dependencies=[Depends(check_admin)])
 def delete_user_review(review_id: int, db: Session = Depends(get_db)):

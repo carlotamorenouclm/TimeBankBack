@@ -1,3 +1,8 @@
+"""
+Contiene logica de negocio reutilizable entre rutas y consultas.
+
+Comentarios generados para documentar la intencion de cada bloque principal.
+"""
 from sqlalchemy.orm import Session
 
 from app.db.queries_chat import get_request_by_history_transaction_id
@@ -22,11 +27,13 @@ from app.schemas.review import CreateReviewResponse, TransactionReviewOut
 from app.services.portal import PortalNotFoundError
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def _display_name_for_user(user: User) -> str:
 	full_name = " ".join(part for part in [user.name, user.surname] if part).strip()
 	return full_name or user.email
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def _user_name_map(db: Session, user_ids: set[int]) -> dict[int, str]:
 	if not user_ids:
 		return {}
@@ -35,10 +42,12 @@ def _user_name_map(db: Session, user_ids: set[int]) -> dict[int, str]:
 	return {user.id: _display_name_for_user(user) for user in users}
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def _reviewer_name_map(db: Session, reviews) -> dict[int, str]:
 	return _user_name_map(db, {review.reviewer_id for review in reviews})
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def _transaction_service_map(db: Session, reviews) -> dict[int, str]:
 	transaction_ids = {review.transaction_id for review in reviews}
 	if not transaction_ids:
@@ -48,6 +57,7 @@ def _transaction_service_map(db: Session, reviews) -> dict[int, str]:
 	return {transaction.id: transaction.service for transaction in transactions}
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def _build_review_out(
 	review,
 	reviewer_name: str | None = None,
@@ -68,6 +78,7 @@ def _build_review_out(
 	)
 
 
+# Crea o registra el recurso solicitado y prepara la respuesta.
 def create_review_response(
 	db: Session,
 	reviewer_id: int,
@@ -115,6 +126,7 @@ def create_review_response(
 	)
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def get_transaction_reviews_response(
 	db: Session,
 	user_id: int,
@@ -141,6 +153,7 @@ def get_transaction_reviews_response(
 	]
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def get_service_reviews_response(
 	db: Session,
 	service_offer_id: int,
@@ -158,6 +171,7 @@ def get_service_reviews_response(
 	]
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def get_user_reviews_for_admin_response(db: Session, reviewer_id: int) -> list[TransactionReviewOut]:
 	reviews = list_reviews_by_reviewer_id(db, reviewer_id)
 	user_names = _user_name_map(
@@ -177,6 +191,7 @@ def get_user_reviews_for_admin_response(db: Session, reviewer_id: int) -> list[T
 	]
 
 
+# Elimina o desactiva el recurso indicado segun la regla de negocio.
 def delete_review_for_admin_response(db: Session, review_id: int) -> None:
 	if not delete_transaction_review(db, review_id):
 		raise PortalNotFoundError("Review not found")

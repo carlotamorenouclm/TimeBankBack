@@ -1,3 +1,8 @@
+"""
+Expone endpoints HTTP y adapta peticiones/respuestas del dominio.
+
+Comentarios generados para documentar la intencion de cada bloque principal.
+"""
 # Routes related to the currently authenticated user.
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
@@ -13,11 +18,13 @@ from app.db.queries_users import (
 
 router = APIRouter()
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 @router.get("", response_model=UserOut, status_code=status.HTTP_200_OK)
 def me(current_user=Depends(get_current_user)):
     return current_user
 
 
+# Actualiza los datos existentes con la informacion recibida.
 @router.post("/update", response_model=UserOut, status_code=status.HTTP_200_OK)
 def update_me(
     payload: UserUpdate,
@@ -42,6 +49,7 @@ def update_me(
     return user
 
 
+# Elimina o desactiva el recurso indicado segun la regla de negocio.
 @router.delete("/delete", status_code=status.HTTP_204_NO_CONTENT)
 def delete_me(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     ok = delete_user_account(db, current_user)
@@ -50,6 +58,7 @@ def delete_me(db: Session = Depends(get_db), current_user=Depends(get_current_us
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 @router.post("/isAdmin", response_model=bool, status_code=status.HTTP_200_OK)
 def is_admin(current_user=Depends(get_current_user)):
     return current_user.role == "ADMIN"

@@ -1,3 +1,8 @@
+"""
+Encapsula consultas y acceso a base de datos para mantener limpias las rutas.
+
+Comentarios generados para documentar la intencion de cada bloque principal.
+"""
 # Queries for chat messages linked to service requests.
 from sqlalchemy.orm import Session
 
@@ -9,6 +14,7 @@ from app.models.users import User
 LEGACY_DEMO_USER_EMAILS = ["seller.demo@timebank.local"]
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def cleanup_chat_for_seeded_portal_data(db: Session) -> None:
     demo_users = db.query(User).filter(User.email.in_(LEGACY_DEMO_USER_EMAILS)).all()
     demo_user_ids = [user.id for user in demo_users]
@@ -38,6 +44,7 @@ def cleanup_chat_for_seeded_portal_data(db: Session) -> None:
         ).delete(synchronize_session=False)
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def get_request_by_history_transaction_id(
     db: Session,
     transaction_id: int,
@@ -71,11 +78,13 @@ def get_request_by_history_transaction_id(
     )
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def _user_display_name(user: User) -> str:
     full_name = " ".join(part for part in [user.name, user.surname] if part).strip()
     return full_name or user.email
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def get_user_by_display_name(db: Session, display_name: str | None) -> User | None:
     if not display_name:
         return None
@@ -86,6 +95,7 @@ def get_user_by_display_name(db: Session, display_name: str | None) -> User | No
     return None
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def get_history_chat_info(db: Session, transaction: UserTransaction) -> tuple[str | None, int | None]:
     linked_request = get_request_by_history_transaction_id(db, transaction.id)
     if linked_request is not None:
@@ -125,6 +135,7 @@ def get_history_chat_info(db: Session, transaction: UserTransaction) -> tuple[st
     return f"transaction-{transaction.id}", other_user.id
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def get_request_for_chat(db: Session, request_id: int, user_id: int) -> ServiceRequest | None:
     return (
         db.query(ServiceRequest)
@@ -136,6 +147,7 @@ def get_request_for_chat(db: Session, request_id: int, user_id: int) -> ServiceR
     )
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def list_chat_messages(db: Session, request_id: int) -> list[ChatMessage]:
     return (
         db.query(ChatMessage)
@@ -145,6 +157,7 @@ def list_chat_messages(db: Session, request_id: int) -> list[ChatMessage]:
     )
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def count_unread_request_messages(db: Session, request_id: int, user_id: int) -> int:
     return (
         db.query(ChatMessage)
@@ -157,6 +170,7 @@ def count_unread_request_messages(db: Session, request_id: int, user_id: int) ->
     )
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def mark_request_messages_read(db: Session, request_id: int, user_id: int) -> None:
     db.query(ChatMessage).filter(
         ChatMessage.service_request_id == request_id,
@@ -166,6 +180,7 @@ def mark_request_messages_read(db: Session, request_id: int, user_id: int) -> No
     db.commit()
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def list_thread_messages(db: Session, thread_key: str) -> list[ChatMessage]:
     return (
         db.query(ChatMessage)
@@ -175,6 +190,7 @@ def list_thread_messages(db: Session, thread_key: str) -> list[ChatMessage]:
     )
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def count_unread_thread_messages(db: Session, thread_key: str, user_id: int) -> int:
     return (
         db.query(ChatMessage)
@@ -187,6 +203,7 @@ def count_unread_thread_messages(db: Session, thread_key: str, user_id: int) -> 
     )
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def mark_thread_messages_read(db: Session, thread_key: str, user_id: int) -> None:
     db.query(ChatMessage).filter(
         ChatMessage.thread_key == thread_key,
@@ -196,6 +213,7 @@ def mark_thread_messages_read(db: Session, thread_key: str, user_id: int) -> Non
     db.commit()
 
 
+# Crea o registra el recurso solicitado y prepara la respuesta.
 def create_chat_message(
     db: Session,
     request_row: ServiceRequest,
@@ -223,6 +241,7 @@ def create_chat_message(
     return chat_message
 
 
+# Crea o registra el recurso solicitado y prepara la respuesta.
 def create_thread_message(
     db: Session,
     thread_key: str,

@@ -1,3 +1,8 @@
+"""
+Encapsula consultas y acceso a base de datos para mantener limpias las rutas.
+
+Comentarios generados para documentar la intencion de cada bloque principal.
+"""
 # Configure SQLAlchemy connection and expose one session per request.
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker
@@ -8,6 +13,7 @@ engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 def get_db():
     # Open a session for the current request and close it afterwards.
     db = SessionLocal()
@@ -17,6 +23,7 @@ def get_db():
         db.close()
 
 
+# Crea o registra el recurso solicitado y prepara la respuesta.
 def create_tables() -> None:
     # Import Base and models so metadata gets registered.
     from app.models.users import Base  # noqa
@@ -33,6 +40,7 @@ def create_tables() -> None:
     ensure_portal_schema_updates()
 
 
+# Encapsula una parte concreta de la logica de la aplicacion.
 def ensure_portal_schema_updates() -> None:
     # create_all creates new tables, but it does not modify existing ones.
     # This lightweight patch keeps the schema aligned with the current app state.

@@ -1,3 +1,8 @@
+"""
+Centraliza la configuracion de entorno que usa la aplicacion.
+
+Comentarios generados para documentar la intencion de cada bloque principal.
+"""
 # Carga la configuracion desde .env y construye la URL de conexion a la BD.
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -5,6 +10,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 BASE_DIR = Path(__file__).resolve().parents[2]  # -> TimeBankBack/
 
 
+# Define esta clase y agrupa los datos que pertenecen a la entidad.
 class Settings(BaseSettings):
     # Database
     DB_HOST: str
@@ -31,6 +37,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    # Encapsula una parte concreta de la logica de la aplicacion.
     @property
     def DATABASE_URL(self) -> str:
         return (

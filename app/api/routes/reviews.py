@@ -1,3 +1,8 @@
+"""
+Expone endpoints HTTP y adapta peticiones/respuestas del dominio.
+
+Comentarios generados para documentar la intencion de cada bloque principal.
+"""
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -14,6 +19,7 @@ from app.services.review import (
 router = APIRouter()
 
 
+# Crea o registra el recurso solicitado y prepara la respuesta.
 @router.post("/reviews", response_model=CreateReviewResponse, status_code=status.HTTP_201_CREATED)
 def create_review(
     payload: CreateReviewPayload,
@@ -32,6 +38,7 @@ def create_review(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 @router.get(
     "/reviews/services/{service_offer_id}",
     response_model=list[TransactionReviewOut],
@@ -48,6 +55,7 @@ def get_service_reviews(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+# Recupera la informacion solicitada desde la capa correspondiente.
 @router.get(
     "/reviews/{transaction_id}",
     response_model=list[TransactionReviewOut],
