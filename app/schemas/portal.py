@@ -11,6 +11,8 @@ class PortalUserSummary(BaseModel):
     email: str
     avatar_key: str | None = None
     pending_inbox_count: int = 0
+    pending_purchases_count: int = 0
+    pending_sales_count: int = 0
 
 
 class ServiceOfferOut(BaseModel):
@@ -43,6 +45,8 @@ class TransactionOut(BaseModel):
     chat_key: str | None = None
     other_user_id: int | None = None
     unread_count: int = 0
+    has_unseen_update: bool = False
+    has_unseen_review: bool = False
     type: str
     service: str
     other_user: str | None = None
@@ -56,6 +60,10 @@ class TransactionOut(BaseModel):
 
 class HistoryResponse(BaseModel):
     transactions: list[TransactionOut]
+
+
+class MarkHistoryNotificationsPayload(BaseModel):
+    transaction_type: str = Field(..., pattern="^(Purchase|Sale)$")
 
 
 class InboxRequestOut(BaseModel):

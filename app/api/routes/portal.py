@@ -16,6 +16,7 @@ from app.schemas.portal import (
     DeleteServiceOfferResponse,
     HistoryResponse,
     InboxResponse,
+    MarkHistoryNotificationsPayload,
     PortalUserSummary,
     RechargePayload,
     RejectRequestPayload,
@@ -37,6 +38,7 @@ from app.services.portal import (
     get_history_response,
     get_inbox_response,
     get_wallet_response,
+    mark_history_notifications_seen_response,
     process_stripe_checkout_completed,
     reject_inbox_request_response,
 )
@@ -59,6 +61,16 @@ def get_dashboard(db: Session = Depends(get_db), current_user=Depends(get_curren
 @router.get("/history", response_model=HistoryResponse, status_code=status.HTTP_200_OK)
 def get_history(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     return get_history_response(db, current_user.id)
+
+
+@router.post("/history/notifications/read", response_model=PortalUserSummary, status_code=status.HTTP_200_OK)
+def mark_history_notifications_read(
+    payload: MarkHistoryNotificationsPayload,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    mark_history_notifications_seen_response(db, current_user.id, payload.transaction_type)
+    return build_portal_summary(db, current_user)
 
 
 @router.get("/inbox", response_model=InboxResponse, status_code=status.HTTP_200_OK)

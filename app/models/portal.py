@@ -79,5 +79,6 @@ class UserTransaction(Base):
     other_user = Column(String(255), nullable=True)
     amount = Column(Integer, nullable=False)
     status = Column(String(20), nullable=False)
+    has_unseen_update = Column(Boolean, nullable=False, default=False)
     occurred_at = Column(DateTime(timezone=True), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

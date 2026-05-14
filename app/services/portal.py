@@ -26,9 +26,11 @@ from app.db.queries_portal import (
     list_received_requests,
     list_user_transactions,
     list_wallet_recharges,
+    mark_request_transaction_update_seen,
+    mark_user_transaction_updates_seen,
     reject_request,
 )
-from app.db.queries_review import get_average_rating_by_service_offer_id
+from app.db.queries_review import get_average_rating_by_service_offer_id, get_review_by_transaction_id
 from app.schemas.portal import (
     CreateServiceOfferResponse,
     CreateServiceRequestResponse,
@@ -64,6 +66,7 @@ class PortalNotFoundError(Exception):
 def build_portal_summary(db: Session, current_user) -> PortalUserSummary:
     # Convert the authenticated user into the DTO exposed by the API.
     full_name = " ".join(part for part in [current_user.name, current_user.surname] if part).strip()
+    history = get_history_response(db, current_user.id)
     return PortalUserSummary(
         id=current_user.id,
         name=full_name or current_user.email,
@@ -71,6 +74,16 @@ def build_portal_summary(db: Session, current_user) -> PortalUserSummary:
         email=current_user.email,
         avatar_key=current_user.avatar_key,
         pending_inbox_count=count_pending_received_requests(db, current_user.id),
+        pending_purchases_count=sum(
+            item.unread_count + int(item.has_unseen_update)
+            for item in history.transactions
+            if item.type == "Purchase"
+        ),
+        pending_sales_count=sum(
+            item.unread_count + int(item.has_unseen_update)
+            for item in history.transactions
+            if item.type == "Sale"
+        ),
     )
 
 
@@ -108,6 +121,13 @@ def get_history_response(db: Session, user_id: int) -> HistoryResponse:
             if chat_key
             else 0
         )
+        has_unseen_review = (
+            item.type == "Sale"
+            and bool(item.has_unseen_update)
+            and linked_request is not None
+            and linked_request.buyer_transaction_id is not None
+            and get_review_by_transaction_id(db, linked_request.buyer_transaction_id) is not None
+        )
         transactions.append(
             TransactionOut(
             id=item.id,
@@ -115,6 +135,8 @@ def get_history_response(db: Session, user_id: int) -> HistoryResponse:
             chat_key=chat_key,
             other_user_id=other_user_id,
             unread_count=unread_count,
+            has_unseen_update=bool(item.has_unseen_update),
+            has_unseen_review=has_unseen_review,
             type=item.type,
             service=item.service,
             other_user=item.other_user,
@@ -146,6 +168,8 @@ def get_history_response(db: Session, user_id: int) -> HistoryResponse:
                 chat_key=None,
                 other_user_id=request_row.requester_id,
                 unread_count=count_unread_request_messages(db, request_row.id, user_id),
+                has_unseen_update=False,
+                has_unseen_review=False,
                 type="Sale",
                 service=request_row.service,
                 other_user=request_row.requester_name,
@@ -158,6 +182,14 @@ def get_history_response(db: Session, user_id: int) -> HistoryResponse:
             )
         )
     return HistoryResponse(transactions=transactions)
+
+
+def mark_history_notifications_seen_response(
+    db: Session,
+    user_id: int,
+    transaction_type: str,
+) -> None:
+    mark_user_transaction_updates_seen(db, user_id, transaction_type)
 
 
 def _build_inbox_response(request_rows) -> InboxResponse:
@@ -222,6 +254,7 @@ def complete_request_response(db: Session, user_id: int, request_id: int) -> His
 
     try:
         complete_request(db, request_row)
+        mark_request_transaction_update_seen(db, request_row, user_id)
     except ValueError as exc:
         raise PortalNotFoundError(str(exc)) from exc
 

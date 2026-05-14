@@ -63,6 +63,11 @@ def ensure_portal_schema_updates() -> None:
                 "ALTER TABLE wallet_recharges ADD COLUMN stripe_checkout_session_id VARCHAR(255) NULL UNIQUE"
             ),
         },
+        "user_transactions": {
+            "has_unseen_update": (
+                "ALTER TABLE user_transactions ADD COLUMN has_unseen_update BOOLEAN NOT NULL DEFAULT 0"
+            ),
+        },
     }
 
     with engine.begin() as connection:

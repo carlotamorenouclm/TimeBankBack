@@ -151,6 +151,46 @@ def list_user_transactions(db: Session, user_id: int) -> list[UserTransaction]:
     )
 
 
+def mark_user_transaction_updates_seen(db: Session, user_id: int, transaction_type: str) -> None:
+    db.query(UserTransaction).filter(
+        UserTransaction.user_id == user_id,
+        UserTransaction.type == transaction_type,
+        UserTransaction.has_unseen_update.is_(True),
+    ).update({UserTransaction.has_unseen_update: False}, synchronize_session=False)
+    db.commit()
+
+
+def mark_transaction_update_unseen(db: Session, transaction_id: int | None) -> None:
+    if transaction_id is None:
+        return
+
+    db.query(UserTransaction).filter(
+        UserTransaction.id == transaction_id,
+    ).update({UserTransaction.has_unseen_update: True}, synchronize_session=False)
+    db.commit()
+
+
+def mark_request_transaction_update_seen(
+    db: Session,
+    request_row: ServiceRequest,
+    user_id: int,
+) -> None:
+    transaction_id = None
+    if request_row.requester_id == user_id:
+        transaction_id = request_row.buyer_transaction_id
+    elif request_row.receiver_id == user_id:
+        transaction_id = request_row.seller_transaction_id
+
+    if transaction_id is None:
+        return
+
+    db.query(UserTransaction).filter(
+        UserTransaction.id == transaction_id,
+        UserTransaction.user_id == user_id,
+    ).update({UserTransaction.has_unseen_update: False}, synchronize_session=False)
+    db.commit()
+
+
 def get_transaction_by_id(db: Session, transaction_id: int) -> UserTransaction | None:
     return db.query(UserTransaction).filter(UserTransaction.id == transaction_id).first()
 
@@ -203,6 +243,7 @@ def accept_request(db: Session, request_row: ServiceRequest, clarification: str)
         ).first()
         if requester_transaction is not None:
             requester_transaction.status = "Accepted"
+            requester_transaction.has_unseen_update = True
 
     provider_transaction = UserTransaction(
         user_id=request_row.receiver_id,
@@ -239,6 +280,7 @@ def reject_request(db: Session, request_row: ServiceRequest, reason: str) -> Ser
         ).first()
         if requester_transaction is not None:
             requester_transaction.status = "Cancelled"
+            requester_transaction.has_unseen_update = True
 
     provider_transaction = UserTransaction(
         user_id=request_row.receiver_id,
@@ -281,6 +323,7 @@ def complete_request(db: Session, request_row: ServiceRequest) -> ServiceRequest
         ).first()
         if buyer_transaction is not None:
             buyer_transaction.status = "Completed"
+            buyer_transaction.has_unseen_update = True
 
     if request_row.seller_transaction_id:
         seller_transaction = db.query(UserTransaction).filter(
@@ -288,6 +331,7 @@ def complete_request(db: Session, request_row: ServiceRequest) -> ServiceRequest
         ).first()
         if seller_transaction is not None:
             seller_transaction.status = "Completed"
+            seller_transaction.has_unseen_update = True
 
     # Transfer funds to the provider wallet once the service is completed.
     provider_wallet = get_wallet_by_user_id(db, request_row.receiver_id)

@@ -5,6 +5,7 @@ from app.db.queries_portal import (
 	get_request_by_transaction_id,
 	get_service_offer_by_id,
 	get_transaction_by_id,
+	mark_transaction_update_unseen,
 )
 from app.db.queries_review import (
 	create_transaction_review,
@@ -103,6 +104,7 @@ def create_review_response(
 		rating=rating,
 		comment=comment,
 	)
+	mark_transaction_update_unseen(db, request_row.seller_transaction_id)
 
 	return CreateReviewResponse(
 		message="Review created successfully",
