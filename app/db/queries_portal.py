@@ -307,13 +307,32 @@ def list_wallet_recharges(db: Session, user_id: int) -> list[WalletRecharge]:
     )
 
 
-def create_wallet_recharge(db: Session, user_id: int, amount: int) -> UserWallet:
+def create_wallet_recharge(
+    db: Session,
+    user_id: int,
+    amount: int,
+    stripe_checkout_session_id: str | None = None,
+) -> UserWallet:
     # Update the balance and persist the recharge as a wallet movement.
     wallet = get_wallet_by_user_id(db, user_id)
     if wallet is None:
         raise ValueError("Wallet not found")
+
+    if stripe_checkout_session_id:
+        existing_recharge = db.query(WalletRecharge).filter(
+            WalletRecharge.stripe_checkout_session_id == stripe_checkout_session_id
+        ).first()
+        if existing_recharge is not None:
+            return wallet
+
     wallet.balance += amount
-    db.add(WalletRecharge(user_id=user_id, amount=amount))
+    db.add(
+        WalletRecharge(
+            user_id=user_id,
+            amount=amount,
+            stripe_checkout_session_id=stripe_checkout_session_id,
+        )
+    )
     db.commit()
     db.refresh(wallet)
     return wallet

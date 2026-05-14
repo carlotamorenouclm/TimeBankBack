@@ -1,7 +1,9 @@
 # User portal routes: receive HTTP and delegate business logic to the service layer.
-from fastapi import APIRouter, Depends, HTTPException, status
+import stripe
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.auth import get_current_user
 from app.db.session import get_db
 from app.schemas.portal import (
@@ -17,13 +19,17 @@ from app.schemas.portal import (
     PortalUserSummary,
     RechargePayload,
     RejectRequestPayload,
+    StripeCheckoutSessionResponse,
     WalletResponse,
 )
 from app.services.portal import (
     PortalNotFoundError,
+    StripePaymentError,
     accept_inbox_request_response,
     build_portal_summary,
+    confirm_wallet_checkout_session_response,
     complete_request_response,
+    create_wallet_checkout_session_response,
     create_service_offer_response,
     create_purchase_request_response,
     delete_service_offer_response,
@@ -31,7 +37,7 @@ from app.services.portal import (
     get_history_response,
     get_inbox_response,
     get_wallet_response,
-    recharge_wallet_response,
+    process_stripe_checkout_completed,
     reject_inbox_request_response,
 )
 
@@ -113,10 +119,66 @@ def recharge_wallet(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    raise HTTPException(status_code=400, detail="Wallet recharges must be paid through Stripe Checkout")
+
+
+@router.post(
+    "/wallet/checkout-session",
+    response_model=StripeCheckoutSessionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_wallet_checkout_session(
+    payload: RechargePayload,
+    current_user=Depends(get_current_user),
+):
     try:
-        return recharge_wallet_response(db, current_user.id, payload.amount)
+        return create_wallet_checkout_session_response(current_user.id, payload.amount)
+    except StripePaymentError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/wallet/checkout-session/{session_id}/confirm", response_model=WalletResponse)
+def confirm_wallet_checkout_session(
+    session_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    try:
+        return confirm_wallet_checkout_session_response(db, current_user.id, session_id)
     except PortalNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except StripePaymentError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/stripe/webhook", status_code=status.HTTP_200_OK)
+async def stripe_webhook(
+    request: Request,
+    stripe_signature: str | None = Header(default=None, alias="stripe-signature"),
+    db: Session = Depends(get_db),
+):
+    if not settings.STRIPE_WEBHOOK_SECRET:
+        raise HTTPException(status_code=400, detail="Stripe webhook secret is not configured")
+    if not stripe_signature:
+        raise HTTPException(status_code=400, detail="Missing Stripe signature")
+
+    payload = await request.body()
+    try:
+        event = stripe.Webhook.construct_event(
+            payload=payload,
+            sig_header=stripe_signature,
+            secret=settings.STRIPE_WEBHOOK_SECRET,
+        )
+    except (ValueError, stripe.error.SignatureVerificationError) as exc:
+        raise HTTPException(status_code=400, detail="Invalid Stripe webhook payload") from exc
+
+    if event["type"] == "checkout.session.completed":
+        try:
+            process_stripe_checkout_completed(db, event["data"]["object"])
+        except (PortalNotFoundError, StripePaymentError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {"received": True}
 
 
 @router.post(

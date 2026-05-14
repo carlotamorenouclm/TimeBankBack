@@ -100,6 +100,11 @@ class RechargePayload(BaseModel):
     amount: int = Field(..., gt=0, le=1000)
 
 
+class StripeCheckoutSessionResponse(BaseModel):
+    session_id: str
+    checkout_url: str
+
+
 class CreateServiceRequestPayload(BaseModel):
     scheduled_at: str = Field(..., min_length=3, max_length=255)
     street: str = Field(..., min_length=2, max_length=255)

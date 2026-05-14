@@ -57,6 +57,11 @@ def ensure_portal_schema_updates() -> None:
             "thread_key": "ALTER TABLE chat_messages ADD COLUMN thread_key VARCHAR(255) NULL",
             "is_read": "ALTER TABLE chat_messages ADD COLUMN is_read BOOLEAN NOT NULL DEFAULT 0",
         },
+        "wallet_recharges": {
+            "stripe_checkout_session_id": (
+                "ALTER TABLE wallet_recharges ADD COLUMN stripe_checkout_session_id VARCHAR(255) NULL UNIQUE"
+            ),
+        },
     }
 
     with engine.begin() as connection:

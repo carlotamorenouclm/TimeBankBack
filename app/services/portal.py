@@ -1,6 +1,8 @@
 # Portal service layer: orchestrates queries and maps ORM models to DTOs.
+import stripe
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.db.queries_chat import (
     count_unread_request_messages,
     count_unread_thread_messages,
@@ -42,6 +44,16 @@ from app.schemas.portal import (
     WalletResponse,
     format_datetime,
 )
+
+
+class StripePaymentError(Exception):
+    pass
+
+
+def _configure_stripe() -> None:
+    if not settings.STRIPE_SECRET_KEY:
+        raise StripePaymentError("Stripe secret key is not configured")
+    stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 class PortalNotFoundError(Exception):
@@ -239,6 +251,84 @@ def recharge_wallet_response(db: Session, user_id: int, amount: int) -> WalletRe
     return get_wallet_response(db, user_id)
 
 
+def create_wallet_checkout_session_response(user_id: int, amount: int) -> dict:
+    _configure_stripe()
+
+    unit_amount = settings.STRIPE_COIN_UNIT_AMOUNT_CENTS
+    if unit_amount <= 0:
+        raise StripePaymentError("Stripe coin price is not configured")
+
+    base_url = settings.FRONTEND_URL.rstrip("/")
+    try:
+        session = stripe.checkout.Session.create(
+            mode="payment",
+            payment_method_types=["card"],
+            line_items=[
+                {
+                    "price_data": {
+                        "currency": settings.STRIPE_CURRENCY,
+                        "product_data": {"name": f"TimeBank wallet recharge ({amount} coins)"},
+                        "unit_amount": unit_amount,
+                    },
+                    "quantity": amount,
+                }
+            ],
+            metadata={"user_id": str(user_id), "amount": str(amount)},
+            payment_intent_data={"metadata": {"user_id": str(user_id), "amount": str(amount)}},
+            success_url=f"{base_url}/wallet?stripe_session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{base_url}/wallet?stripe_cancelled=1",
+        )
+    except stripe.error.StripeError as exc:
+        raise StripePaymentError(str(exc)) from exc
+
+    return {"session_id": session.id, "checkout_url": session.url}
+
+
+def confirm_wallet_checkout_session_response(db: Session, user_id: int, session_id: str) -> WalletResponse:
+    _configure_stripe()
+
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+    except stripe.error.StripeError as exc:
+        raise StripePaymentError(str(exc)) from exc
+
+    if str(session.metadata.get("user_id")) != str(user_id):
+        raise PortalNotFoundError("Checkout session does not belong to this user")
+
+    if session.payment_status != "paid":
+        raise StripePaymentError("Payment has not been completed")
+
+    try:
+        amount = int(session.metadata.get("amount", "0"))
+        if amount <= 0:
+            raise ValueError("Invalid recharge amount")
+        create_wallet_recharge(db, user_id, amount, session.id)
+    except ValueError as exc:
+        raise PortalNotFoundError(str(exc)) from exc
+
+    return get_wallet_response(db, user_id)
+
+
+def process_stripe_checkout_completed(db: Session, checkout_session: dict) -> None:
+    metadata = checkout_session.get("metadata") or {}
+    if checkout_session.get("payment_status") != "paid":
+        return
+
+    try:
+        user_id = int(metadata.get("user_id", "0"))
+        amount = int(metadata.get("amount", "0"))
+    except ValueError:
+        raise StripePaymentError("Invalid Stripe checkout metadata")
+
+    if user_id <= 0 or amount <= 0:
+        raise StripePaymentError("Invalid Stripe checkout metadata")
+
+    try:
+        create_wallet_recharge(db, user_id, amount, checkout_session["id"])
+    except ValueError as exc:
+        raise PortalNotFoundError(str(exc)) from exc
+
+
 def create_purchase_request_response(
     db: Session,
     requester,
@@ -349,4 +439,3 @@ def delete_service_offer_response(
         message="Service deleted successfully",
         deleted_service_id=deleted_service_id,
     )
-
