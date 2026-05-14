@@ -8,11 +8,13 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.schemas.user import UserOut, UserUpdate
+from app.schemas.user import UserOut, UserPasswordUpdate, UserUpdate
 from app.core.auth import get_current_user
+from app.core.security import verify_password
 from app.db.queries_users import (
     delete_user_account,
     get_user_by_email,
+    update_password,
     update_user,
 )
 
@@ -47,6 +49,25 @@ def update_me(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+
+# Actualiza la contrasena del usuario autenticado tras verificar la actual.
+@router.post("/password", status_code=status.HTTP_200_OK)
+def update_my_password(
+    payload: UserPasswordUpdate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    if not verify_password(payload.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    if verify_password(payload.new_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="New password must be different")
+
+    user = update_password(db, current_user.id, payload.new_password)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"message": "Password updated successfully"}
 
 
 # Elimina o desactiva el recurso indicado segun la regla de negocio.
