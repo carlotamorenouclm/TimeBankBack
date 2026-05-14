@@ -25,6 +25,7 @@ TimeBank is a peer-to-peer service exchange platform where users offer and reque
 - Request completion flow from transaction history.
 - Wallet balance and Stripe Checkout wallet recharges.
 - Transaction history for purchases and sales.
+- History notification counters for pending purchase and sale updates.
 - Chat between buyer and seller from transaction history.
 - Unread message counters per transaction.
 - Service and transaction reviews.
@@ -35,10 +36,13 @@ TimeBank is a peer-to-peer service exchange platform where users offer and reque
 - FastAPI
 - SQLAlchemy
 - Pydantic
+- Pydantic Settings
 - MySQL
 - PyMySQL
+- Cryptography
 - Passlib bcrypt
 - Python JOSE for JWT tokens
+- Python Multipart
 - Stripe Python SDK
 - Uvicorn
 
@@ -138,6 +142,21 @@ With the backend running on `http://localhost:8000`, forward Stripe webhook even
 stripe listen --forward-to localhost:8000/portal/stripe/webhook
 ```
 
+Keep this command running while testing local payments. Stripe cannot call a `localhost`
+URL directly from its servers, so the Stripe CLI acts as a tunnel between Stripe and the
+local FastAPI backend:
+
+```text
+Stripe -> Stripe CLI -> http://localhost:8000/portal/stripe/webhook
+```
+
+In production this command is not needed. Instead, register the public backend webhook
+URL in the Stripe Dashboard, for example:
+
+```text
+https://your-domain.com/portal/stripe/webhook
+```
+
 This command prints the value you need for `STRIPE_WEBHOOK_SECRET`. It looks like this:
 
 ```text
@@ -218,6 +237,7 @@ The backend currently allows requests from the Vite frontend running on:
 | GET | `/portal/summary` | User | Returns user summary data for the portal sidebar. |
 | GET | `/portal/dashboard` | User | Returns available services and own services. |
 | GET | `/portal/history` | User | Returns purchase and sale history. |
+| POST | `/portal/history/notifications/read` | User | Marks purchase or sale history update notifications as seen. |
 | GET | `/portal/inbox` | User | Returns received service requests. |
 | POST | `/portal/inbox/{request_id}/accept` | User | Accepts a received service request. |
 | POST | `/portal/inbox/{request_id}/reject` | User | Rejects a received service request. |
